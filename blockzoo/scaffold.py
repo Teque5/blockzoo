@@ -87,24 +87,30 @@ class ScaffoldNet(nn.Module):
         stage_b = make_stage(c, 2 * c, stride=2)  # Mid-stage (downsample)
         stage_c = make_stage(2 * c, 4 * c, stride=2)  # Late-stage (low-res)
 
+        # Create default stages using BasicBlock for non-target positions
+        def make_basic_stage(ch_in: int, ch_out: int, stride: int) -> nn.Sequential:
+            """Create a stage with repeated BasicBlocks."""
+            layers = [BasicBlock(ch_in, ch_out, stride=stride)]
+            for _ in range(num_blocks - 1):
+                layers.append(BasicBlock(ch_out, ch_out, stride=1))
+            return nn.Sequential(*layers)
+
         # Set stages based on position with proper channel handling
         if position == "early":
-            self.stage1 = stage_a  # 64 -> 64
-            self.stage2 = nn.Identity()
-            self.stage3 = nn.Identity()
-            self._head_channels = c
+            self.stage1 = stage_a  # Target blocks: 64 -> 64
+            self.stage2 = make_basic_stage(c, 2 * c, stride=2)  # BasicBlock: 64 -> 128
+            self.stage3 = make_basic_stage(2 * c, 4 * c, stride=2)  # BasicBlock: 128 -> 256
+            self._head_channels = 4 * c
         elif position == "mid":
-            # Need to adjust channels from stem to stage B
-            self.stage1 = nn.Identity()
-            self.stage2 = stage_b  # 64 -> 128
-            self.stage3 = nn.Identity()
-            self._head_channels = 2 * c
+            self.stage1 = make_basic_stage(c, c, stride=1)  # BasicBlock: 64 -> 64
+            self.stage2 = stage_b  # Target blocks: 64 -> 128
+            self.stage3 = make_basic_stage(2 * c, 4 * c, stride=2)  # BasicBlock: 128 -> 256
+            self._head_channels = 4 * c
         elif position == "late":
-            # Need channel progression: 64 -> 128 -> 256
-            self.stage1 = nn.Identity()
-            self.stage2 = nn.Identity()
-            # Adjust stage C to start from base channels
-            stage_c = make_stage(c, 4 * c, stride=2)  # 64 -> 256 directly
+            self.stage1 = make_basic_stage(c, c, stride=1)  # BasicBlock: 64 -> 64
+            self.stage2 = make_basic_stage(c, 2 * c, stride=2)  # BasicBlock: 64 -> 128
+            # Adjust stage C to start from stage B output
+            stage_c = make_stage(2 * c, 4 * c, stride=2)  # Target blocks: 128 -> 256
             self.stage3 = stage_c
             self._head_channels = 4 * c
 
@@ -155,9 +161,9 @@ class ScaffoldNet(nn.Module):
         }
 
 
-class IdentityBlock(nn.Module):
+class BasicBlock(nn.Module):
     """
-    Simple identity block for testing purposes.
+    Simple basic block for testing purposes and as stand-in for non-target stages.
 
     Parameters
     ----------

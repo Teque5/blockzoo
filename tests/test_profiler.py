@@ -3,7 +3,7 @@
 import unittest
 
 from blockzoo.profiler import get_model_profile, profile_block_in_scaffold
-from blockzoo.scaffold import IdentityBlock, ScaffoldNet
+from blockzoo.scaffold import BasicBlock, ScaffoldNet
 
 
 class TestProfiler(unittest.TestCase):
@@ -11,7 +11,7 @@ class TestProfiler(unittest.TestCase):
 
     def setUp(self):
         """Set up test fixtures."""
-        self.model = ScaffoldNet(IdentityBlock, position="mid")
+        self.model = ScaffoldNet(BasicBlock, position="mid")
         self.input_shape = (1, 3, 32, 32)
 
     def test_get_model_profile(self):
@@ -33,10 +33,10 @@ class TestProfiler(unittest.TestCase):
 
     def test_profile_block_in_scaffold(self):
         """Test profile_block_in_scaffold function."""
-        profile = profile_block_in_scaffold("blockzoo.scaffold.IdentityBlock", position="mid")
+        profile = profile_block_in_scaffold("blockzoo.scaffold.BasicBlock", position="mid")
 
         # Check that additional metadata is included
-        self.assertEqual(profile["block_class"], "blockzoo.scaffold.IdentityBlock")
+        self.assertEqual(profile["block_class"], "blockzoo.scaffold.BasicBlock")
         self.assertEqual(profile["position"], "mid")
         self.assertEqual(profile["num_blocks"], 3)  # default
 

@@ -4,7 +4,7 @@ import unittest
 
 import torch
 
-from blockzoo.scaffold import IdentityBlock, ScaffoldNet
+from blockzoo.scaffold import BasicBlock, ScaffoldNet
 
 
 class TestScaffoldNet(unittest.TestCase):
@@ -12,7 +12,7 @@ class TestScaffoldNet(unittest.TestCase):
 
     def setUp(self):
         """Set up test fixtures."""
-        self.block_cls = IdentityBlock
+        self.block_cls = BasicBlock
         self.input_tensor = torch.randn(2, 3, 32, 32)
 
     def test_scaffold_creation_all_positions(self):
@@ -66,21 +66,21 @@ class TestScaffoldNet(unittest.TestCase):
         self.assertEqual(info["active_stage"], "stage1")
 
 
-class TestIdentityBlock(unittest.TestCase):
-    """Test cases for IdentityBlock."""
+class TestBasicBlock(unittest.TestCase):
+    """Test cases for BasicBlock."""
 
-    def test_identity_block_forward(self):
-        """Test IdentityBlock forward pass."""
-        block = IdentityBlock(64, 64)
+    def test_basic_block_forward(self):
+        """Test BasicBlock forward pass."""
+        block = BasicBlock(64, 64)
         x = torch.randn(2, 64, 16, 16)
         output = block(x)
 
         self.assertEqual(output.shape, (2, 64, 16, 16))
         self.assertTrue(torch.isfinite(output).all())
 
-    def test_identity_block_stride(self):
-        """Test IdentityBlock with stride."""
-        block = IdentityBlock(64, 128, stride=2)
+    def test_basic_block_stride(self):
+        """Test BasicBlock with stride."""
+        block = BasicBlock(64, 128, stride=2)
         x = torch.randn(2, 64, 16, 16)
         output = block(x)
 

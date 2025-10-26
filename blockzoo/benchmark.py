@@ -56,8 +56,8 @@ def benchmark_model(
 
     Examples
     --------
-    >>> from blockzoo.scaffold import IdentityBlock, ScaffoldNet
-    >>> model = ScaffoldNet(IdentityBlock, position='mid')
+    >>> from blockzoo.scaffold import BasicBlock, ScaffoldNet
+    >>> model = ScaffoldNet(BasicBlock, position='mid')
     >>> results = benchmark_model(model, device='cpu')
     >>> print(f"Latency: {results['latency_ms']:.2f} ms")
     """

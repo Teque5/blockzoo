@@ -10,9 +10,9 @@ class TestConfig(unittest.TestCase):
 
     def test_experiment_config_creation(self):
         """Test ExperimentConfig creation."""
-        config = ExperimentConfig(block_class="blockzoo.scaffold.IdentityBlock", position="mid", dataset="cifar10")
+        config = ExperimentConfig(block_class="blockzoo.scaffold.BasicBlock", position="mid", dataset="cifar10")
 
-        self.assertEqual(config.block_class, "blockzoo.scaffold.IdentityBlock")
+        self.assertEqual(config.block_class, "blockzoo.scaffold.BasicBlock")
         self.assertEqual(config.position, "mid")
         self.assertEqual(config.dataset, "cifar10")
         self.assertEqual(config.out_dim, 10)  # Should be set based on dataset

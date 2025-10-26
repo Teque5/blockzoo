@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from blockzoo.scaffold import IdentityBlock
+from blockzoo.scaffold import BasicBlock
 from blockzoo.utils import append_results, format_bytes, load_results, safe_import
 
 
@@ -27,8 +27,8 @@ class TestUtils(unittest.TestCase):
     def test_safe_import_valid_class(self):
         """Test safe_import with valid class."""
         # Import a known class
-        imported_cls = safe_import("blockzoo.scaffold.IdentityBlock")
-        self.assertEqual(imported_cls, IdentityBlock)
+        imported_cls = safe_import("blockzoo.scaffold.BasicBlock")
+        self.assertEqual(imported_cls, BasicBlock)
 
     def test_safe_import_invalid_class(self):
         """Test safe_import with invalid class."""

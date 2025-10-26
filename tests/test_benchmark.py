@@ -3,7 +3,7 @@
 import unittest
 
 from blockzoo.benchmark import benchmark_block_in_scaffold, benchmark_model
-from blockzoo.scaffold import IdentityBlock, ScaffoldNet
+from blockzoo.scaffold import BasicBlock, ScaffoldNet
 
 
 class TestBenchmark(unittest.TestCase):
@@ -11,7 +11,7 @@ class TestBenchmark(unittest.TestCase):
 
     def setUp(self):
         """Set up test fixtures."""
-        self.model = ScaffoldNet(IdentityBlock, position="mid")
+        self.model = ScaffoldNet(BasicBlock, position="mid")
         self.input_shape = (1, 3, 32, 32)
 
     def test_benchmark_model(self):
@@ -31,10 +31,10 @@ class TestBenchmark(unittest.TestCase):
 
     def test_benchmark_block_in_scaffold(self):
         """Test benchmark_block_in_scaffold function."""
-        results = benchmark_block_in_scaffold("blockzoo.scaffold.IdentityBlock", position="mid", warmup_runs=2, benchmark_runs=5)
+        results = benchmark_block_in_scaffold("blockzoo.scaffold.BasicBlock", position="mid", warmup_runs=2, benchmark_runs=5)
 
         # Check that additional metadata is included
-        self.assertEqual(results["block_class"], "blockzoo.scaffold.IdentityBlock")
+        self.assertEqual(results["block_class"], "blockzoo.scaffold.BasicBlock")
         self.assertEqual(results["position"], "mid")
 
 

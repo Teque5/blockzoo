@@ -13,12 +13,12 @@ from typing import Any, Dict, Optional, Tuple
 import lightning as L
 import pandas as pd
 import torch
-from torch import nn
 import torch.nn.functional as F
 import torchvision
 import torchvision.transforms as transforms
 from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
 from lightning.pytorch.loggers import TensorBoardLogger
+from torch import nn
 from torch.utils.data import DataLoader
 
 from .benchmark import benchmark_model, print_benchmark_results

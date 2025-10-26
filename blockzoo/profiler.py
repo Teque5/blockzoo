@@ -9,15 +9,15 @@ import sys
 from typing import Any, Dict, Optional, Tuple
 
 import torch
+from fvcore.nn import FlopCountAnalysis
+from ptflops import get_model_complexity_info
 from torch import nn
-
-from .scaffold import ScaffoldNet
-from .utils import format_bytes, safe_import
 
 # Required imports - assume all dependencies installed
 from torchinfo import summary
-from fvcore.nn import FlopCountAnalysis
-from ptflops import get_model_complexity_info
+
+from .scaffold import ScaffoldNet
+from .utils import format_bytes, safe_import
 
 
 def get_model_profile(model: nn.Module, input_shape: Tuple[int, int, int, int] = (1, 3, 32, 32), device: str = "cpu") -> Dict[str, Any]:
@@ -45,8 +45,8 @@ def get_model_profile(model: nn.Module, input_shape: Tuple[int, int, int, int] =
 
     Examples
     --------
-    >>> from blockzoo.scaffold import IdentityBlock, ScaffoldNet
-    >>> model = ScaffoldNet(IdentityBlock, position='mid')
+    >>> from blockzoo.scaffold import BasicBlock, ScaffoldNet
+    >>> model = ScaffoldNet(BasicBlock, position='mid')
     >>> profile = get_model_profile(model)
     >>> print(f"Parameters: {profile['params_total']}")
     """

@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from blockzoo.config import ExperimentConfig
-from blockzoo.scaffold import IdentityBlock, ScaffoldNet
+from blockzoo.scaffold import BasicBlock, ScaffoldNet
 from blockzoo.train import BlockZooLightningModule, create_model_from_config
 
 
@@ -13,7 +13,7 @@ class TestTrain(unittest.TestCase):
 
     def setUp(self):
         """Set up test fixtures."""
-        self.config = ExperimentConfig(block_class="blockzoo.scaffold.IdentityBlock", position="mid", dataset="cifar10", epochs=1, batch_size=2)
+        self.config = ExperimentConfig(block_class="blockzoo.scaffold.BasicBlock", position="mid", dataset="cifar10", epochs=1, batch_size=2)
 
     def test_create_model_from_config(self):
         """Test model creation from configuration."""

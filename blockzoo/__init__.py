@@ -6,7 +6,6 @@ affects feature extraction capability, with FLOPs/params/memory/runtime recorded
 """
 
 __version__ = "0.1.0"
-__author__ = "BlockZoo Team"
 __description__ = "Benchmark and profile convolutional building blocks for feature extraction."
 
 from .benchmark import benchmark_block_in_scaffold, benchmark_model
@@ -14,7 +13,7 @@ from .config import BenchmarkConfig, ExperimentConfig, get_dataset_config
 from .profiler import get_model_profile, profile_block_in_scaffold
 
 # Core components
-from .scaffold import IdentityBlock, ScaffoldNet
+from .scaffold import BasicBlock, ScaffoldNet
 
 # Main functions
 from .train import create_model_from_config
@@ -23,7 +22,7 @@ from .utils import append_results, format_bytes, load_results, safe_import
 __all__ = [
     # Core classes
     "ScaffoldNet",
-    "IdentityBlock",
+    "BasicBlock",
     # Configuration
     "ExperimentConfig",
     "BenchmarkConfig",
@@ -80,7 +79,7 @@ def quick_profile(block_class_name: str, position: str = "mid") -> dict:
 
     Examples
     --------
-    >>> results = blockzoo.quick_profile('blockzoo.scaffold.IdentityBlock', 'mid')
+    >>> results = blockzoo.quick_profile('blockzoo.scaffold.BasicBlock', 'mid')
     >>> print(f"Parameters: {results['params_total']}")
     """
     return profile_block_in_scaffold(block_qualified_name=block_class_name, position=position)
@@ -104,7 +103,7 @@ def quick_benchmark(block_class_name: str, position: str = "mid") -> dict:
 
     Examples
     --------
-    >>> results = blockzoo.quick_benchmark('blockzoo.scaffold.IdentityBlock', 'mid')
+    >>> results = blockzoo.quick_benchmark('blockzoo.scaffold.BasicBlock', 'mid')
     >>> print(f"Latency: {results['latency_ms']:.2f} ms")
     """
     return benchmark_block_in_scaffold(block_qualified_name=block_class_name, position=position)

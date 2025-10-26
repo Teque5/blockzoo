@@ -26,13 +26,13 @@ class TestIntegration(unittest.TestCase):
 
     def test_end_to_end_profiling(self):
         """Test end-to-end profiling workflow."""
-        # Profile a block
+        # profile a block
         profile = profile_block_in_scaffold("blockzoo.scaffold.BasicBlock", position="early")
 
-        # Save results
+        # save results
         append_results(self.temp_csv, profile)
 
-        # Load and verify results
+        # load and verify results
         df = load_results(str(self.temp_csv))
         self.assertIsNotNone(df)
         self.assertEqual(len(df), 1)
@@ -47,11 +47,11 @@ class TestIntegration(unittest.TestCase):
             profile["test_run"] = f"position_{position}"
             append_results(self.temp_csv, profile)
 
-        # Load and verify results
+        # load and verify results
         df = load_results(str(self.temp_csv))
         self.assertEqual(len(df), 3)
 
-        # Check that all positions are represented
+        # check that all positions are represented
         positions_in_results = set(df["position"].values)
         self.assertEqual(positions_in_results, set(positions))
 

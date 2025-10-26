@@ -16,14 +16,14 @@ class TestBenchmark(unittest.TestCase):
 
     def test_benchmark_model(self):
         """Test benchmark_model function."""
-        # Use minimal runs for testing
+        # use minimal runs for testing
         results = benchmark_model(self.model, self.input_shape, device="cpu", warmup_runs=2, benchmark_runs=5)
 
-        # Check required keys
+        # check required keys
         required_keys = {"latency_ms", "latency_std", "throughput", "device", "batch_size", "warmup_runs", "benchmark_runs", "input_shape"}
         self.assertEqual(set(results.keys()), required_keys)
 
-        # Check that values are reasonable
+        # check that values are reasonable
         self.assertGreater(results["latency_ms"], 0)
         self.assertGreaterEqual(results["latency_std"], 0)
         self.assertGreater(results["throughput"], 0)
@@ -33,7 +33,7 @@ class TestBenchmark(unittest.TestCase):
         """Test benchmark_block_in_scaffold function."""
         results = benchmark_block_in_scaffold("blockzoo.scaffold.BasicBlock", position="mid", warmup_runs=2, benchmark_runs=5)
 
-        # Check that additional metadata is included
+        # check that additional metadata is included
         self.assertEqual(results["block_class"], "blockzoo.scaffold.BasicBlock")
         self.assertEqual(results["position"], "mid")
 

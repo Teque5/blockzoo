@@ -57,7 +57,7 @@ class ScaffoldNet(nn.Module):
     ):
         super().__init__()
 
-        # Validate position
+        # validate position
         valid_positions = {"early", "mid", "late"}
         if position not in valid_positions:
             raise ValueError(f"Unsupported position: {position!r}. Must be one of {valid_positions}")
@@ -68,7 +68,7 @@ class ScaffoldNet(nn.Module):
         self.out_dim = out_dim
         self.block_cls = block_cls
 
-        # Fixed stem
+        # fixed stem
         self.stem = nn.Sequential(
             nn.Conv2d(3, base_channels, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(base_channels),
@@ -83,11 +83,11 @@ class ScaffoldNet(nn.Module):
             return nn.Sequential(*layers)
 
         c = base_channels
-        stage_a = make_stage(c, c, stride=1)  # Early-stage (high-res)
-        stage_b = make_stage(c, 2 * c, stride=2)  # Mid-stage (downsample)
-        stage_c = make_stage(2 * c, 4 * c, stride=2)  # Late-stage (low-res)
+        stage_a = make_stage(c, c, stride=1)  # early-stage (high-res)
+        stage_b = make_stage(c, 2 * c, stride=2)  # mid-stage (downsample)
+        stage_c = make_stage(2 * c, 4 * c, stride=2)  # late-stage (low-res)
 
-        # Create default stages using BasicBlock for non-target positions
+        # create default stages using BasicBlock for non-target positions
         def make_basic_stage(ch_in: int, ch_out: int, stride: int) -> nn.Sequential:
             """Create a stage with repeated BasicBlocks."""
             layers = [BasicBlock(ch_in, ch_out, stride=stride)]
@@ -95,26 +95,26 @@ class ScaffoldNet(nn.Module):
                 layers.append(BasicBlock(ch_out, ch_out, stride=1))
             return nn.Sequential(*layers)
 
-        # Set stages based on position with proper channel handling
+        # set stages based on position with proper channel handling
         if position == "early":
-            self.stage1 = stage_a  # Target blocks: 64 -> 64
-            self.stage2 = make_basic_stage(c, 2 * c, stride=2)  # BasicBlock: 64 -> 128
-            self.stage3 = make_basic_stage(2 * c, 4 * c, stride=2)  # BasicBlock: 128 -> 256
+            self.stage1 = stage_a  # target blocks: 64 -> 64
+            self.stage2 = make_basic_stage(c, 2 * c, stride=2)  # basicBlock: 64 -> 128
+            self.stage3 = make_basic_stage(2 * c, 4 * c, stride=2)  # basicBlock: 128 -> 256
             self._head_channels = 4 * c
         elif position == "mid":
-            self.stage1 = make_basic_stage(c, c, stride=1)  # BasicBlock: 64 -> 64
-            self.stage2 = stage_b  # Target blocks: 64 -> 128
-            self.stage3 = make_basic_stage(2 * c, 4 * c, stride=2)  # BasicBlock: 128 -> 256
+            self.stage1 = make_basic_stage(c, c, stride=1)  # basicBlock: 64 -> 64
+            self.stage2 = stage_b  # target blocks: 64 -> 128
+            self.stage3 = make_basic_stage(2 * c, 4 * c, stride=2)  # basicBlock: 128 -> 256
             self._head_channels = 4 * c
         elif position == "late":
-            self.stage1 = make_basic_stage(c, c, stride=1)  # BasicBlock: 64 -> 64
-            self.stage2 = make_basic_stage(c, 2 * c, stride=2)  # BasicBlock: 64 -> 128
-            # Adjust stage C to start from stage B output
-            stage_c = make_stage(2 * c, 4 * c, stride=2)  # Target blocks: 128 -> 256
+            self.stage1 = make_basic_stage(c, c, stride=1)  # basicBlock: 64 -> 64
+            self.stage2 = make_basic_stage(c, 2 * c, stride=2)  # basicBlock: 64 -> 128
+            # adjust stage C to start from stage B output
+            stage_c = make_stage(2 * c, 4 * c, stride=2)  # target blocks: 128 -> 256
             self.stage3 = stage_c
             self._head_channels = 4 * c
 
-        # Head: adapt to the channels produced by the active stage
+        # head: adapt to the channels produced by the active stage
         self.head = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
             nn.Flatten(),

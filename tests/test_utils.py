@@ -26,7 +26,7 @@ class TestUtils(unittest.TestCase):
 
     def test_safe_import_valid_class(self):
         """Test safe_import with valid class."""
-        # Import a known class
+        # import a known class
         imported_cls = safe_import("blockzoo.scaffold.BasicBlock")
         self.assertEqual(imported_cls, BasicBlock)
 
@@ -60,10 +60,10 @@ class TestUtils(unittest.TestCase):
         data = {"metric1": 1.0, "metric2": "test", "metric3": 42}
         append_results(self.temp_csv, data)
 
-        # Check that file was created
+        # check that file was created
         self.assertTrue(self.temp_csv.exists())
 
-        # Check contents
+        # check contents
         df = pd.read_csv(self.temp_csv)
         self.assertEqual(len(df), 1)
         self.assertEqual(df.iloc[0]["metric1"], 1.0)
@@ -72,15 +72,15 @@ class TestUtils(unittest.TestCase):
 
     def test_append_results_existing_file(self):
         """Test append_results with existing file."""
-        # Create initial file
+        # create initial file
         data1 = {"metric1": 1.0, "metric2": "test1"}
         append_results(self.temp_csv, data1)
 
-        # Append second row
+        # append second row
         data2 = {"metric1": 2.0, "metric2": "test2"}
         append_results(self.temp_csv, data2)
 
-        # Check contents
+        # check contents
         df = pd.read_csv(self.temp_csv)
         self.assertEqual(len(df), 2)
         self.assertEqual(df.iloc[1]["metric1"], 2.0)

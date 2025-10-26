@@ -47,47 +47,47 @@ class ExperimentConfig:
         Path to CSV file for saving results.
     """
 
-    # Model configuration
+    # model configuration
     block_class: str
     position: str = "mid"
     num_blocks: int = 3
     base_channels: int = 64
     out_dim: int = 10
 
-    # Training configuration
+    # training configuration
     dataset: str = "cifar10"
     epochs: int = 10
     batch_size: int = 32
     learning_rate: float = 0.001
 
-    # System configuration
+    # system configuration
     device: str = "cpu"
     input_shape: Tuple[int, int, int, int] = (1, 3, 32, 32)
 
-    # Experiment configuration
+    # experiment configuration
     profile_only: bool = False
     benchmark: bool = False
     output_file: str = "results/results.csv"
 
-    # Optional metadata
+    # optional metadata
     experiment_name: Optional[str] = None
     notes: Optional[str] = None
 
     def __post_init__(self) -> None:
         """Validate configuration after initialization."""
-        # Validate position
+        # validate position
         if self.position not in {"early", "mid", "late"}:
             raise ValueError(f"Invalid position: {self.position}")
 
-        # Validate dataset
+        # validate dataset
         if self.dataset not in {"cifar10", "cifar100", "imagenet"}:
             raise ValueError(f"Unsupported dataset: {self.dataset}")
 
-        # Validate device
+        # validate device
         if self.device not in {"cpu", "cuda"}:
             raise ValueError(f"Invalid device: {self.device}")
 
-        # Set output dimension based on dataset if not specified
+        # set output dimension based on dataset if not specified
         if self.out_dim == 10 and self.dataset == "cifar100":
             self.out_dim = 100
         elif self.out_dim == 10 and self.dataset == "imagenet":
@@ -148,21 +148,21 @@ def create_train_parser() -> argparse.ArgumentParser:
         description="Train and evaluate convolutional blocks in BlockZoo framework", formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
-    # Required arguments
+    # required arguments
     parser.add_argument("block", help="Fully qualified name of the block class (e.g., 'timm.models.resnet.BasicBlock')")
 
-    # Model configuration
+    # model configuration
     parser.add_argument("--position", choices=["early", "mid", "late"], default="mid", help="Position to place the block in scaffold")
     parser.add_argument("--num-blocks", type=int, default=3, help="Number of blocks in the scaffold stage")
     parser.add_argument("--base-channels", type=int, default=64, help="Base number of channels for the scaffold")
 
-    # Training configuration
+    # training configuration
     parser.add_argument("--dataset", choices=["cifar10", "cifar100", "imagenet"], default="cifar10", help="Dataset to use for training")
     parser.add_argument("--epochs", type=int, default=10, help="Number of training epochs")
     parser.add_argument("--batch-size", type=int, default=32, help="Batch size for training")
     parser.add_argument("--lr", "--learning-rate", type=float, default=0.001, dest="learning_rate", help="Learning rate for optimizer")
 
-    # System configuration
+    # system configuration
     parser.add_argument("--device", choices=["cpu", "cuda", "auto"], default="auto", help="Device to use for training and inference")
     parser.add_argument(
         "--input-shape",
@@ -173,16 +173,16 @@ def create_train_parser() -> argparse.ArgumentParser:
         help="Input tensor shape (batch_size, channels, height, width)",
     )
 
-    # Experiment modes
+    # experiment modes
     parser.add_argument("--profile-only", action="store_true", help="Only profile the model without training")
     parser.add_argument("--benchmark", action="store_true", help="Run benchmarking after training")
 
-    # Output configuration
+    # output configuration
     parser.add_argument("--output", default="results/results.csv", help="CSV file to save results")
     parser.add_argument("--experiment-name", help="Name for this experiment (for tracking)")
     parser.add_argument("--notes", help="Additional notes for this experiment")
 
-    # Benchmark configuration (when --benchmark is used)
+    # benchmark configuration (when --benchmark is used)
     parser.add_argument("--warmup-runs", type=int, default=10, help="Number of warmup runs for benchmarking")
     parser.add_argument("--benchmark-runs", type=int, default=100, help="Number of benchmark runs")
 
@@ -206,14 +206,14 @@ def parse_train_args(args: Optional[List[str]] = None) -> ExperimentConfig:
     parser = create_train_parser()
     parsed_args = parser.parse_args(args)
 
-    # Handle auto device selection
+    # handle auto device selection
     device = parsed_args.device
     if device == "auto":
         import torch
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    # Set output dimension based on dataset
+    # set output dimension based on dataset
     out_dim = 10
     if parsed_args.dataset == "cifar100":
         out_dim = 100
@@ -295,25 +295,25 @@ def validate_config(config: ExperimentConfig) -> None:
     ValueError
         If configuration is invalid.
     """
-    # Check if output directory exists
+    # check if output directory exists
     output_path = Path(config.output_file)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Validate CUDA availability if requested
+    # validate CUDA availability if requested
     if config.device == "cuda":
         import torch
 
         if not torch.cuda.is_available():
             raise ValueError("CUDA device requested but not available")
 
-    # Validate input shape matches dataset expectations
+    # validate input shape matches dataset expectations
     dataset_config = get_dataset_config(config.dataset)
     expected_input_size = dataset_config["input_size"]
 
-    # Check channel and spatial dimensions (ignore batch size)
+    # check channel and spatial dimensions (ignore batch size)
     if config.input_shape[1:] != expected_input_size:
         print(f"[BlockZoo] Warning: Input shape {config.input_shape[1:]} doesn't match " f"expected {expected_input_size} for {config.dataset}")
 
-    # Validate output dimension
+    # validate output dimension
     if config.out_dim != dataset_config["num_classes"]:
         print(f"[BlockZoo] Warning: Output dimension {config.out_dim} doesn't match " f"expected {dataset_config['num_classes']} for {config.dataset}")

@@ -13,7 +13,7 @@ from fvcore.nn import FlopCountAnalysis
 from ptflops import get_model_complexity_info
 from torch import nn
 
-# Required imports - assume all dependencies installed
+# required imports - assume all dependencies installed
 from torchinfo import summary
 
 from .scaffold import ScaffoldNet
@@ -55,51 +55,51 @@ def get_model_profile(model: nn.Module, input_shape: Tuple[int, int, int, int] =
 
     profile = {"params_total": 0, "params_trainable": 0, "flops": 0, "memory_mb": 0.0}
 
-    # Count parameters
+    # count parameters
     total_params = sum(p.numel() for p in model.parameters())
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 
     profile["params_total"] = total_params
     profile["params_trainable"] = trainable_params
 
-    # Create dummy input
+    # create dummy input
     dummy_input = torch.randn(input_shape).to(device)
 
-    # Method 1: Use torchinfo (most comprehensive)
+    # method 1: Use torchinfo (most comprehensive)
     with torch.no_grad():
         model_summary = summary(model, input_size=input_shape, device=device, verbose=0)
-        # Extract memory estimate from torchinfo
+        # extract memory estimate from torchinfo
         if hasattr(model_summary, "total_param_bytes"):
             profile["memory_mb"] = model_summary.total_param_bytes / (1024**2)
         elif hasattr(model_summary, "total_params"):
-            # Rough estimate: 4 bytes per float32 parameter
+            # rough estimate: 4 bytes per float32 parameter
             profile["memory_mb"] = (model_summary.total_params * 4) / (1024**2)
 
-    # Method 2: Use fvcore for FLOPs
+    # method 2: Use fvcore for FLOPs
     with torch.no_grad():
         flops = FlopCountAnalysis(model, dummy_input)
         profile["flops"] = flops.total()
 
-    # Method 3: Use ptflops as fallback for FLOPs if fvcore didn't work
+    # method 3: Use ptflops as fallback for FLOPs if fvcore didn't work
     if profile["flops"] == 0:
         # ptflops expects input shape without batch dimension
         input_shape_no_batch = input_shape[1:]
         with torch.no_grad():
             flops, params = get_model_complexity_info(model, input_shape_no_batch, print_per_layer_stat=False, as_strings=False)
             profile["flops"] = flops
-            # Cross-check parameter count
+            # cross-check parameter count
             if profile["params_total"] == 0:
                 profile["params_total"] = params
 
-    # Fallback memory estimate if not available from torchinfo
+    # fallback memory estimate if not available from torchinfo
     if profile["memory_mb"] == 0.0:
-        # Rough estimate: 4 bytes per parameter + activation memory
+        # rough estimate: 4 bytes per parameter + activation memory
         param_memory = (profile["params_total"] * 4) / (1024**2)
-        # Estimate activation memory (very rough)
+        # estimate activation memory (very rough)
         with torch.no_grad():
             _ = model(dummy_input)
-            # Approximate activation memory based on input size
-            activation_memory = (dummy_input.numel() * 4 * 10) / (1024**2)  # Factor of 10 for intermediate activations
+            # approximate activation memory based on input size
+            activation_memory = (dummy_input.numel() * 4 * 10) / (1024**2)  # factor of 10 for intermediate activations
             profile["memory_mb"] = param_memory + activation_memory
 
     return profile
@@ -153,16 +153,16 @@ def profile_block_in_scaffold(
     ImportError
         If the block class cannot be imported.
     """
-    # Import the block class
+    # import the block class
     block_cls = safe_import(block_qualified_name)
 
-    # Create scaffolded model
+    # create scaffolded model
     model = ScaffoldNet(block_cls=block_cls, position=position, num_blocks=num_blocks, base_channels=64, out_dim=10)
 
-    # Get profile
+    # get profile
     profile = get_model_profile(model, input_shape, device)
 
-    # Add metadata
+    # add metadata
     profile.update({"block_class": block_qualified_name, "position": position, "num_blocks": num_blocks, "input_shape": input_shape, "device": device})
 
     return profile
@@ -188,22 +188,22 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    # Check CUDA availability
+    # check CUDA availability
     if args.device == "cuda" and not torch.cuda.is_available():
         print("[BlockZoo] Warning: CUDA requested but not available, falling back to CPU")
         args.device = "cpu"
 
     try:
-        # Profile the block
+        # profile the block
         profile = profile_block_in_scaffold(
             block_qualified_name=args.block, position=args.position, input_shape=tuple(args.input_shape), device=args.device, num_blocks=args.num_blocks
         )
 
-        # Print results
+        # print results
         model_name = f"{args.block} (position={args.position})"
         print_profile(profile, model_name)
 
-        # Optionally save to CSV
+        # optionally save to CSV
         if args.output:
             from .utils import append_results
 

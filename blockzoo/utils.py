@@ -39,19 +39,19 @@ def safe_import(qualified_name: str) -> Type:
     >>> block = BasicBlock(64, 64)
     """
     try:
-        # Split module and class name
+        # split module and class name
         parts = qualified_name.split(".")
         if len(parts) < 2:
             raise ImportError(f"Invalid qualified name: {qualified_name}")
 
-        # Try importing progressively more specific modules
+        # try importing progressively more specific modules
         for i in range(len(parts) - 1, 0, -1):
             module_name = ".".join(parts[:i])
             class_name = ".".join(parts[i:])
 
             try:
                 module = importlib.import_module(module_name)
-                # Navigate to the class through nested attributes
+                # navigate to the class through nested attributes
                 obj = module
                 for attr in class_name.split("."):
                     obj = getattr(obj, attr)
@@ -88,13 +88,13 @@ def append_results(path: str, data: Dict[str, Any]) -> None:
     """
     file_path = Path(path)
 
-    # Create directories if they don't exist
+    # create directories if they don't exist
     file_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Check if file exists to determine if we need headers
+    # check if file exists to determine if we need headers
     file_exists = file_path.exists()
 
-    # Convert data to ensure all values are serializable
+    # convert data to ensure all values are serializable
     serialized_data = {}
     for key, value in data.items():
         if value is None:
@@ -104,11 +104,11 @@ def append_results(path: str, data: Dict[str, Any]) -> None:
         else:
             serialized_data[key] = str(value)
 
-    # Write to CSV
+    # write to CSV
     with open(file_path, "a", newline="", encoding="utf-8") as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=serialized_data.keys())
 
-        # Write headers if file is new
+        # write headers if file is new
         if not file_exists:
             writer.writeheader()
 

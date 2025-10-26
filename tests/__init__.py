@@ -1,6 +1,6 @@
 """Test configuration for pytest."""
 
-# Suppress warnings during tests
+# suppress warnings during tests
 import warnings
 
 warnings.filterwarnings("ignore", category=UserWarning)

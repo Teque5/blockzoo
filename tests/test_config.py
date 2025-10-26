@@ -15,15 +15,15 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(config.block_class, "blockzoo.scaffold.BasicBlock")
         self.assertEqual(config.position, "mid")
         self.assertEqual(config.dataset, "cifar10")
-        self.assertEqual(config.out_dim, 10)  # Should be set based on dataset
+        self.assertEqual(config.out_dim, 10)  # should be set based on dataset
 
     def test_experiment_config_validation(self):
         """Test ExperimentConfig validation."""
-        # Invalid position
+        # invalid position
         with self.assertRaises(ValueError):
             ExperimentConfig(block_class="test", position="invalid")
 
-        # Invalid dataset
+        # invalid dataset
         with self.assertRaises(ValueError):
             ExperimentConfig(block_class="test", dataset="invalid")
 

@@ -31,10 +31,10 @@ class TestScaffoldNet(unittest.TestCase):
                 model = ScaffoldNet(self.block_cls, position=position, out_dim=10)
                 output = model(self.input_tensor)
 
-                # Check output shape
+                # check output shape
                 self.assertEqual(output.shape, (2, 10))
 
-                # Check that output is finite
+                # check that output is finite
                 self.assertTrue(torch.isfinite(output).all())
 
     def test_scaffold_invalid_position(self):
@@ -50,7 +50,7 @@ class TestScaffoldNet(unittest.TestCase):
         self.assertEqual(model.base_channels, 32)
         self.assertEqual(model.out_dim, 100)
 
-        # Test forward pass with custom parameters
+        # test forward pass with custom parameters
         output = model(self.input_tensor)
         self.assertEqual(output.shape, (2, 100))
 
@@ -84,7 +84,7 @@ class TestBasicBlock(unittest.TestCase):
         x = torch.randn(2, 64, 16, 16)
         output = block(x)
 
-        # Output should have different channels and spatial size
+        # output should have different channels and spatial size
         self.assertEqual(output.shape, (2, 128, 8, 8))
 
 

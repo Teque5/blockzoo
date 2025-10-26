@@ -18,24 +18,24 @@ class TestProfiler(unittest.TestCase):
         """Test get_model_profile function."""
         profile = get_model_profile(self.model, self.input_shape)
 
-        # Check required keys
+        # check required keys
         required_keys = {"params_total", "params_trainable", "flops", "memory_mb"}
         self.assertEqual(set(profile.keys()), required_keys)
 
-        # Check that values are reasonable
+        # check that values are reasonable
         self.assertGreater(profile["params_total"], 0)
         self.assertGreaterEqual(profile["params_trainable"], 0)
         self.assertGreaterEqual(profile["flops"], 0)
         self.assertGreaterEqual(profile["memory_mb"], 0.0)
 
-        # Trainable params should not exceed total params
+        # trainable params should not exceed total params
         self.assertLessEqual(profile["params_trainable"], profile["params_total"])
 
     def test_profile_block_in_scaffold(self):
         """Test profile_block_in_scaffold function."""
         profile = profile_block_in_scaffold("blockzoo.scaffold.BasicBlock", position="mid")
 
-        # Check that additional metadata is included
+        # check that additional metadata is included
         self.assertEqual(profile["block_class"], "blockzoo.scaffold.BasicBlock")
         self.assertEqual(profile["position"], "mid")
         self.assertEqual(profile["num_blocks"], 3)  # default

@@ -27,7 +27,7 @@ from .profiler import get_model_profile, print_profile
 from .scaffold import ScaffoldNet
 from .utils import append_results, safe_import
 
-# Suppress Lightning warnings for cleaner output
+# suppress Lightning warnings for cleaner output
 warnings.filterwarnings("ignore", ".*does not have many workers.*")
 warnings.filterwarnings("ignore", ".*The dataloader.*")
 
@@ -58,11 +58,11 @@ class BlockZooLightningModule(L.LightningModule):
         logits = self.model(x)
         loss = F.cross_entropy(logits, y)
 
-        # Calculate accuracy
+        # calculate accuracy
         preds = torch.argmax(logits, dim=1)
         acc = torch.sum(preds == y).float() / len(y)
 
-        # Log metrics
+        # log metrics
         self.log("train_loss", loss, prog_bar=True)
         self.log("train_acc", acc, prog_bar=True)
 
@@ -73,11 +73,11 @@ class BlockZooLightningModule(L.LightningModule):
         logits = self.model(x)
         loss = F.cross_entropy(logits, y)
 
-        # Calculate accuracy
+        # calculate accuracy
         preds = torch.argmax(logits, dim=1)
         acc = torch.sum(preds == y).float() / len(y)
 
-        # Log metrics
+        # log metrics
         self.log("val_loss", loss, prog_bar=True)
         self.log("val_acc", acc, prog_bar=True)
 
@@ -116,7 +116,7 @@ def create_data_loaders(dataset_name: str, batch_size: int, num_workers: int = 2
     mean = dataset_config["mean"]
     std = dataset_config["std"]
 
-    # Define transforms
+    # define transforms
     train_transform = transforms.Compose(
         [
             transforms.RandomCrop(32, padding=4) if dataset_name.startswith("cifar") else transforms.RandomResizedCrop(224),
@@ -128,7 +128,7 @@ def create_data_loaders(dataset_name: str, batch_size: int, num_workers: int = 2
 
     val_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=mean, std=std)])
 
-    # Create datasets
+    # create datasets
     if dataset_name == "cifar10":
         train_dataset = torchvision.datasets.CIFAR10(root="./data", train=True, download=True, transform=train_transform)
         val_dataset = torchvision.datasets.CIFAR10(root="./data", train=False, download=True, transform=val_transform)
@@ -136,12 +136,12 @@ def create_data_loaders(dataset_name: str, batch_size: int, num_workers: int = 2
         train_dataset = torchvision.datasets.CIFAR100(root="./data", train=True, download=True, transform=train_transform)
         val_dataset = torchvision.datasets.CIFAR100(root="./data", train=False, download=True, transform=val_transform)
     elif dataset_name == "imagenet":
-        # For ImageNet, we'd need to specify the path - this is a placeholder
+        # for ImageNet, we'd need to specify the path - this is a placeholder
         raise NotImplementedError("ImageNet support requires manual dataset setup")
     else:
         raise ValueError(f"Unsupported dataset: {dataset_name}")
 
-    # Create data loaders
+    # create data loaders
     train_loader = DataLoader(
         train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True if torch.cuda.is_available() else False
     )
@@ -165,10 +165,10 @@ def create_model_from_config(config: ExperimentConfig) -> ScaffoldNet:
     ScaffoldNet
         Configured model.
     """
-    # Import the block class
+    # import the block class
     block_cls = safe_import(config.block_class)
 
-    # Create scaffolded model
+    # create scaffolded model
     model = ScaffoldNet(block_cls=block_cls, position=config.position, num_blocks=config.num_blocks, base_channels=config.base_channels, out_dim=config.out_dim)
 
     return model
@@ -195,35 +195,35 @@ def run_training(config: ExperimentConfig) -> Dict[str, Any]:
     print(f"  Epochs: {config.epochs}")
     print(f"  Device: {config.device}")
 
-    # Create model
+    # create model
     model = create_model_from_config(config)
 
-    # Profile model
+    # profile model
     print(f"\n[BlockZoo] Profiling model...")
     profile_results = get_model_profile(model, config.input_shape, config.device)
     print_profile(profile_results, f"{config.block_class} (position={config.position})")
 
-    # Create data loaders
+    # create data loaders
     print(f"\n[BlockZoo] Creating data loaders...")
     train_loader, val_loader = create_data_loaders(config.dataset, config.batch_size)
 
-    # Create Lightning module
+    # create Lightning module
     lightning_module = BlockZooLightningModule(model, config.learning_rate)
 
-    # Setup trainer
+    # setup trainer
     callbacks = [EarlyStopping(monitor="val_loss", patience=5, verbose=False)]
 
-    # Configure trainer
+    # configure trainer
     trainer_kwargs = {
         "max_epochs": config.epochs,
         "callbacks": callbacks,
         "enable_progress_bar": True,
         "enable_model_summary": False,
-        "logger": False,  # Disable logging for simplicity
-        "enable_checkpointing": False,  # Disable checkpointing for simplicity
+        "logger": False,  # disable logging for simplicity
+        "enable_checkpointing": False,  # disable checkpointing for simplicity
     }
 
-    # Set accelerator
+    # set accelerator
     if config.device == "cuda" and torch.cuda.is_available():
         trainer_kwargs.update({"accelerator": "gpu", "devices": 1})
     else:
@@ -231,7 +231,7 @@ def run_training(config: ExperimentConfig) -> Dict[str, Any]:
 
     trainer = L.Trainer(**trainer_kwargs)
 
-    # Train model
+    # train model
     print(f"\n[BlockZoo] Training model...")
     start_time = time.time()
 
@@ -239,7 +239,7 @@ def run_training(config: ExperimentConfig) -> Dict[str, Any]:
 
     training_time = time.time() - start_time
 
-    # Get final metrics
+    # get final metrics
     train_metrics = trainer.callback_metrics
     val_loss = float(train_metrics.get("val_loss", 0.0))
     val_acc = float(train_metrics.get("val_acc", 0.0))
@@ -248,7 +248,7 @@ def run_training(config: ExperimentConfig) -> Dict[str, Any]:
     print(f"  Final validation loss: {val_loss:.4f}")
     print(f"  Final validation accuracy: {val_acc:.4f}")
 
-    # Prepare results with consistent field ordering
+    # prepare results with consistent field ordering
     results = {
         "timestamp": datetime.now().isoformat(),
         "block": config.block_class,
@@ -264,9 +264,9 @@ def run_training(config: ExperimentConfig) -> Dict[str, Any]:
         "params_trainable": profile_results["params_trainable"],
         "flops": profile_results["flops"],
         "memory_mb": profile_results["memory_mb"],
-        "latency_ms": None,  # Will be filled from benchmark if requested
-        "latency_std": None,  # Will be filled from benchmark if requested
-        "throughput": None,  # Will be filled from benchmark if requested
+        "latency_ms": None,  # will be filled from benchmark if requested
+        "latency_std": None,  # will be filled from benchmark if requested
+        "throughput": None,  # will be filled from benchmark if requested
         "device": config.device,
         "num_blocks": config.num_blocks,
         "base_channels": config.base_channels,
@@ -305,7 +305,7 @@ def run_benchmark_if_requested(model: nn.Module, config: ExperimentConfig) -> Op
         device=config.device,
         batch_size=config.batch_size,
         warmup_runs=10,
-        benchmark_runs=50,  # Fewer runs for training pipeline
+        benchmark_runs=50,  # fewer runs for training pipeline
     )
 
     print_benchmark_results(benchmark_results, f"{config.block_class} (position={config.position})")
@@ -316,18 +316,18 @@ def run_benchmark_if_requested(model: nn.Module, config: ExperimentConfig) -> Op
 def main() -> None:
     """Main entry point for blockzoo-train command."""
     try:
-        # Parse configuration
+        # parse configuration
         config = parse_train_args()
         validate_config(config)
 
-        # Profile-only mode
+        # profile-only mode
         if config.profile_only:
             print(f"[BlockZoo] Profile-only mode")
             model = create_model_from_config(config)
             profile_results = get_model_profile(model, config.input_shape, config.device)
             print_profile(profile_results, f"{config.block_class} (position={config.position})")
 
-            # Optionally save profile results using consistent schema
+            # optionally save profile results using consistent schema
             if config.output_file:
                 profile_data = {
                     "timestamp": datetime.now().isoformat(),
@@ -359,18 +359,18 @@ def main() -> None:
 
             return
 
-        # Full training pipeline
+        # full training pipeline
         results, trained_model = run_training(config)
 
-        # Run benchmarking if requested
+        # run benchmarking if requested
         benchmark_results = run_benchmark_if_requested(trained_model, config)
         if benchmark_results:
-            # Add benchmark results to main results
+            # add benchmark results to main results
             results.update(
                 {"latency_ms": benchmark_results["latency_ms"], "latency_std": benchmark_results["latency_std"], "throughput": benchmark_results["throughput"]}
             )
 
-        # Save results to CSV
+        # save results to CSV
         append_results(config.output_file, results)
         print(f"\n[BlockZoo] Results saved to {config.output_file}")
 

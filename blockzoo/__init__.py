@@ -12,35 +12,35 @@ from .benchmark import benchmark_block_in_scaffold, benchmark_model
 from .config import BenchmarkConfig, ExperimentConfig, get_dataset_config
 from .profiler import get_model_profile, profile_block_in_scaffold
 
-# Core components
+# core components
 from .scaffold import BasicBlock, ScaffoldNet
 
-# Main functions
+# main functions
 from .train import create_model_from_config
 from .utils import append_results, format_bytes, load_results, safe_import
 
 __all__ = [
-    # Core classes
+    # core classes
     "ScaffoldNet",
     "BasicBlock",
-    # Configuration
+    # configuration
     "ExperimentConfig",
     "BenchmarkConfig",
     "get_dataset_config",
-    # Profiling functions
+    # profiling functions
     "get_model_profile",
     "profile_block_in_scaffold",
-    # Benchmarking functions
+    # benchmarking functions
     "benchmark_model",
     "benchmark_block_in_scaffold",
-    # Utilities
+    # utilities
     "safe_import",
     "append_results",
     "format_bytes",
     "load_results",
-    # Training
+    # training
     "create_model_from_config",
-    # Version info
+    # version info
     "__version__",
 ]
 
@@ -60,7 +60,7 @@ def list_supported_datasets() -> list:
     return ["cifar10", "cifar100", "imagenet"]
 
 
-# Package-level convenience functions
+# package-level convenience functions
 def quick_profile(block_class_name: str, position: str = "mid") -> dict:
     """
     Quick profiling of a block in ScaffoldNet.
@@ -109,7 +109,7 @@ def quick_benchmark(block_class_name: str, position: str = "mid") -> dict:
     return benchmark_block_in_scaffold(block_qualified_name=block_class_name, position=position)
 
 
-# Print package info when imported
+# print package info when imported
 def _print_info():
     """Print package information when imported."""
     print(f"[BlockZoo] {__description__}")
@@ -118,7 +118,7 @@ def _print_info():
     print(f"[BlockZoo] Supported datasets: {', '.join(list_supported_datasets())}")
 
 
-# Only print info in interactive environments, not during tests or scripts
+# only print info in interactive environments, not during tests or scripts
 import sys
 
 if hasattr(sys, "ps1") or hasattr(sys, "ps2"):

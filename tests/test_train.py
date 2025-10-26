@@ -19,7 +19,7 @@ class TestTrain(unittest.TestCase):
         """Test model creation from configuration."""
         model = create_model_from_config(self.config)
 
-        # Check that model is correctly created
+        # check that model is correctly created
         self.assertIsInstance(model, ScaffoldNet)
         self.assertEqual(model.position, "mid")
         self.assertEqual(model.num_blocks, 3)  # default
@@ -30,7 +30,7 @@ class TestTrain(unittest.TestCase):
         model = create_model_from_config(self.config)
         lightning_module = BlockZooLightningModule(model, learning_rate=0.001)
 
-        # Check that Lightning module is properly set up
+        # check that Lightning module is properly set up
         self.assertEqual(lightning_module.learning_rate, 0.001)
         self.assertIsNotNone(lightning_module.model)
 
@@ -41,7 +41,7 @@ class TestTrain(unittest.TestCase):
         model = create_model_from_config(self.config)
         lightning_module = BlockZooLightningModule(model, learning_rate=0.001)
 
-        # Test forward pass
+        # test forward pass
         x = torch.randn(2, 3, 32, 32)
         output = lightning_module.forward(x)
 
@@ -55,7 +55,7 @@ class TestTrain(unittest.TestCase):
 
         optimizer_config = lightning_module.configure_optimizers()
 
-        # Check that optimizer is configured correctly
+        # check that optimizer is configured correctly
         self.assertIn("optimizer", optimizer_config)
         self.assertIn("lr_scheduler", optimizer_config)
         self.assertEqual(optimizer_config["monitor"], "val_loss")

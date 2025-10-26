@@ -64,13 +64,13 @@ def benchmark_model(
     model = model.to(device)
     model.eval()
 
-    # Adjust input shape for batch size
+    # adjust input shape for batch size
     actual_input_shape = (batch_size, input_shape[1], input_shape[2], input_shape[3])
 
-    # Create dummy input
+    # create dummy input
     dummy_input = torch.randn(actual_input_shape).to(device)
 
-    # Warmup runs
+    # warmup runs
     print(f"[BlockZoo] Warming up with {warmup_runs} runs...")
     with torch.no_grad():
         for _ in range(warmup_runs):
@@ -80,36 +80,36 @@ def benchmark_model(
             if device == "cuda":
                 torch.cuda.synchronize()
 
-    # Benchmark runs
+    # benchmark runs
     print(f"[BlockZoo] Benchmarking with {benchmark_runs} runs...")
     latencies = []
 
     with torch.no_grad():
         for _ in range(benchmark_runs):
-            # Start timing
+            # start timing
             if device == "cuda":
                 torch.cuda.synchronize()
             start_time = time.perf_counter()
 
-            # Forward pass
+            # forward pass
             _ = model(dummy_input)
 
-            # End timing
+            # end timing
             if device == "cuda":
                 torch.cuda.synchronize()
             end_time = time.perf_counter()
 
-            # Record latency in milliseconds
+            # record latency in milliseconds
             latency_ms = (end_time - start_time) * 1000
             latencies.append(latency_ms)
 
-    # Calculate statistics
+    # calculate statistics
     latencies = np.array(latencies)
     mean_latency = np.mean(latencies)
     std_latency = np.std(latencies)
 
-    # Calculate throughput (images per second)
-    throughput = batch_size / (mean_latency / 1000)  # Convert ms to seconds
+    # calculate throughput (images per second)
+    throughput = batch_size / (mean_latency / 1000)  # convert ms to seconds
 
     return {
         "latency_ms": float(mean_latency),
@@ -185,18 +185,18 @@ def benchmark_block_in_scaffold(
     ImportError
         If the block class cannot be imported.
     """
-    # Import the block class
+    # import the block class
     block_cls = safe_import(block_qualified_name)
 
-    # Create scaffolded model
+    # create scaffolded model
     model = ScaffoldNet(block_cls=block_cls, position=position, num_blocks=num_blocks, base_channels=64, out_dim=10)
 
-    # Benchmark the model
+    # benchmark the model
     results = benchmark_model(
         model=model, input_shape=input_shape, device=device, batch_size=batch_size, warmup_runs=warmup_runs, benchmark_runs=benchmark_runs
     )
 
-    # Add metadata
+    # add metadata
     results.update({"block_class": block_qualified_name, "position": position, "num_blocks": num_blocks})
 
     return results
@@ -282,14 +282,14 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    # Check CUDA availability
+    # check CUDA availability
     if args.device == "cuda" and not torch.cuda.is_available():
         print("[BlockZoo] Warning: CUDA requested but not available, falling back to CPU")
         args.device = "cpu"
 
     try:
         if args.multi_batch:
-            # Multi-batch benchmark
+            # multi-batch benchmark
             block_cls = safe_import(args.block)
             model = ScaffoldNet(block_cls=block_cls, position=args.position, num_blocks=args.num_blocks, base_channels=64, out_dim=10)
 
@@ -302,12 +302,12 @@ def main() -> None:
                 benchmark_runs=args.benchmark_runs,
             )
 
-            # Print results for each batch size
+            # print results for each batch size
             for batch_size, batch_results in results.items():
                 model_name = f"{args.block} (position={args.position}, batch={batch_size})"
                 print_benchmark_results(batch_results, model_name)
 
-                # Optionally save each result
+                # optionally save each result
                 if args.output:
                     from .utils import append_results
 
@@ -315,7 +315,7 @@ def main() -> None:
                     append_results(args.output, batch_results)
 
         else:
-            # Single benchmark
+            # single benchmark
             results = benchmark_block_in_scaffold(
                 block_qualified_name=args.block,
                 position=args.position,
@@ -327,11 +327,11 @@ def main() -> None:
                 benchmark_runs=args.benchmark_runs,
             )
 
-            # Print results
+            # print results
             model_name = f"{args.block} (position={args.position})"
             print_benchmark_results(results, model_name)
 
-            # Optionally save to CSV
+            # optionally save to CSV
             if args.output:
                 from .utils import append_results
 

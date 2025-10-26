@@ -1,0 +1,219 @@
+"""Model profiling utilities for BlockZoo framework.
+
+This module provides functions to profile neural network models, measuring
+parameters, FLOPs, and memory usage using various profiling libraries.
+"""
+
+import argparse
+import sys
+from typing import Any, Dict, Optional, Tuple
+
+import torch
+from torch import nn
+
+from .scaffold import ScaffoldNet
+from .utils import format_bytes, safe_import
+
+# Required imports - assume all dependencies installed
+from torchinfo import summary
+from fvcore.nn import FlopCountAnalysis
+from ptflops import get_model_complexity_info
+
+
+def get_model_profile(model: nn.Module, input_shape: Tuple[int, int, int, int] = (1, 3, 32, 32), device: str = "cpu") -> Dict[str, Any]:
+    """
+    Get comprehensive profiling information for a PyTorch model.
+
+    Parameters
+    ----------
+    model : torch.nn.Module
+        The model to profile.
+    input_shape : tuple of int, optional
+        Input tensor shape as (batch_size, channels, height, width).
+        Default is (1, 3, 32, 32).
+    device : str, optional
+        Device to run profiling on ('cpu' or 'cuda'). Default is 'cpu'.
+
+    Returns
+    -------
+    dict
+        Dictionary containing profiling metrics:
+        - params_total: Total number of parameters
+        - params_trainable: Number of trainable parameters
+        - flops: Number of FLOPs (floating point operations)
+        - memory_mb: Estimated memory usage in MB
+
+    Examples
+    --------
+    >>> from blockzoo.scaffold import IdentityBlock, ScaffoldNet
+    >>> model = ScaffoldNet(IdentityBlock, position='mid')
+    >>> profile = get_model_profile(model)
+    >>> print(f"Parameters: {profile['params_total']}")
+    """
+    model = model.to(device)
+    model.eval()
+
+    profile = {"params_total": 0, "params_trainable": 0, "flops": 0, "memory_mb": 0.0}
+
+    # Count parameters
+    total_params = sum(p.numel() for p in model.parameters())
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+    profile["params_total"] = total_params
+    profile["params_trainable"] = trainable_params
+
+    # Create dummy input
+    dummy_input = torch.randn(input_shape).to(device)
+
+    # Method 1: Use torchinfo (most comprehensive)
+    with torch.no_grad():
+        model_summary = summary(model, input_size=input_shape, device=device, verbose=0)
+        # Extract memory estimate from torchinfo
+        if hasattr(model_summary, "total_param_bytes"):
+            profile["memory_mb"] = model_summary.total_param_bytes / (1024**2)
+        elif hasattr(model_summary, "total_params"):
+            # Rough estimate: 4 bytes per float32 parameter
+            profile["memory_mb"] = (model_summary.total_params * 4) / (1024**2)
+
+    # Method 2: Use fvcore for FLOPs
+    with torch.no_grad():
+        flops = FlopCountAnalysis(model, dummy_input)
+        profile["flops"] = flops.total()
+
+    # Method 3: Use ptflops as fallback for FLOPs if fvcore didn't work
+    if profile["flops"] == 0:
+        # ptflops expects input shape without batch dimension
+        input_shape_no_batch = input_shape[1:]
+        with torch.no_grad():
+            flops, params = get_model_complexity_info(model, input_shape_no_batch, print_per_layer_stat=False, as_strings=False)
+            profile["flops"] = flops
+            # Cross-check parameter count
+            if profile["params_total"] == 0:
+                profile["params_total"] = params
+
+    # Fallback memory estimate if not available from torchinfo
+    if profile["memory_mb"] == 0.0:
+        # Rough estimate: 4 bytes per parameter + activation memory
+        param_memory = (profile["params_total"] * 4) / (1024**2)
+        # Estimate activation memory (very rough)
+        with torch.no_grad():
+            _ = model(dummy_input)
+            # Approximate activation memory based on input size
+            activation_memory = (dummy_input.numel() * 4 * 10) / (1024**2)  # Factor of 10 for intermediate activations
+            profile["memory_mb"] = param_memory + activation_memory
+
+    return profile
+
+
+def print_profile(profile: Dict[str, Any], model_name: str = "Model") -> None:
+    """
+    Print model profiling results in a formatted way.
+
+    Parameters
+    ----------
+    profile : dict
+        Profiling results from get_model_profile().
+    model_name : str, optional
+        Name of the model for display. Default is 'Model'.
+    """
+    print(f"\n[BlockZoo] Profile for {model_name}:")
+    print(f"  Parameters (total):     {profile['params_total']:,}")
+    print(f"  Parameters (trainable): {profile['params_trainable']:,}")
+    print(f"  FLOPs:                  {profile['flops']:,}")
+    print(f"  Memory estimate:        {format_bytes(int(profile['memory_mb'] * 1024 * 1024))}")
+    print(f"  Memory (MB):           {profile['memory_mb']:.2f}")
+
+
+def profile_block_in_scaffold(
+    block_qualified_name: str, position: str = "mid", input_shape: Tuple[int, int, int, int] = (1, 3, 32, 32), device: str = "cpu", num_blocks: int = 3
+) -> Dict[str, Any]:
+    """
+    Profile a block wrapped in ScaffoldNet.
+
+    Parameters
+    ----------
+    block_qualified_name : str
+        Fully qualified name of the block class to import.
+    position : str, optional
+        Position to place the block ('early', 'mid', 'late'). Default is 'mid'.
+    input_shape : tuple of int, optional
+        Input tensor shape. Default is (1, 3, 32, 32).
+    device : str, optional
+        Device for profiling. Default is 'cpu'.
+    num_blocks : int, optional
+        Number of blocks to use in the scaffold. Default is 3.
+
+    Returns
+    -------
+    dict
+        Profiling results with additional metadata.
+
+    Raises
+    ------
+    ImportError
+        If the block class cannot be imported.
+    """
+    # Import the block class
+    block_cls = safe_import(block_qualified_name)
+
+    # Create scaffolded model
+    model = ScaffoldNet(block_cls=block_cls, position=position, num_blocks=num_blocks, base_channels=64, out_dim=10)
+
+    # Get profile
+    profile = get_model_profile(model, input_shape, device)
+
+    # Add metadata
+    profile.update({"block_class": block_qualified_name, "position": position, "num_blocks": num_blocks, "input_shape": input_shape, "device": device})
+
+    return profile
+
+
+def main() -> None:
+    """CLI entrypoint for blockzoo-profile command."""
+    parser = argparse.ArgumentParser(description="Profile a convolutional block wrapped in ScaffoldNet", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    parser.add_argument("block", help="Fully qualified name of the block class (e.g., 'timm.models.resnet.BasicBlock')")
+    parser.add_argument("--position", choices=["early", "mid", "late"], default="mid", help="Position to place the block in scaffold")
+    parser.add_argument(
+        "--input-shape",
+        type=int,
+        nargs=4,
+        default=[1, 3, 32, 32],
+        metavar=("B", "C", "H", "W"),
+        help="Input tensor shape (batch_size, channels, height, width)",
+    )
+    parser.add_argument("--device", choices=["cpu", "cuda"], default="cpu", help="Device to run profiling on")
+    parser.add_argument("--num-blocks", type=int, default=3, help="Number of blocks in the scaffold stage")
+    parser.add_argument("--output", help="Optional CSV file to append results to")
+
+    args = parser.parse_args()
+
+    # Check CUDA availability
+    if args.device == "cuda" and not torch.cuda.is_available():
+        print("[BlockZoo] Warning: CUDA requested but not available, falling back to CPU")
+        args.device = "cpu"
+
+    try:
+        # Profile the block
+        profile = profile_block_in_scaffold(
+            block_qualified_name=args.block, position=args.position, input_shape=tuple(args.input_shape), device=args.device, num_blocks=args.num_blocks
+        )
+
+        # Print results
+        model_name = f"{args.block} (position={args.position})"
+        print_profile(profile, model_name)
+
+        # Optionally save to CSV
+        if args.output:
+            from .utils import append_results
+
+            append_results(args.output, profile)
+            print(f"\n[BlockZoo] Results appended to {args.output}")
+
+    except Exception as e:
+        print(f"[BlockZoo] Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

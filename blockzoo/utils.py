@@ -26,11 +26,6 @@ def append_results(path: str, data: Dict[str, Any]) -> None:
     -----
     If the file doesn't exist, it will be created with appropriate headers.
     Missing directories in the path will be created automatically.
-
-    Examples
-    --------
-    >>> data = {'block': 'ResNet', 'accuracy': 0.95, 'params': 11000000}
-    >>> append_results('results/results.csv', data)
     """
     file_path = Path(path)
 

@@ -106,12 +106,6 @@ def load_results(path: str) -> Optional[pd.DataFrame]:
     -------
     pd.DataFrame or None
         DataFrame containing the results, or None if file doesn't exist.
-
-    Examples
-    --------
-    >>> df = load_results('results/results.csv')
-    >>> if df is not None:
-    ...     print(df.head())
     """
     file_path = Path(path)
 

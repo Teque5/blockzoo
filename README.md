@@ -307,28 +307,6 @@ print("Block generality scores:")
 print(generality_scores.sort_values(ascending=False))
 ```
 
-#### Visualization
-
-```python
-import seaborn as sns
-
-# Position vs Accuracy plot
-plt.figure(figsize=(10, 6))
-sns.boxplot(data=df, x='position', y='val_acc')
-plt.title('Validation Accuracy by Position')
-plt.ylabel('Validation Accuracy')
-plt.show()
-
-# Performance vs Efficiency scatter
-plt.figure(figsize=(10, 6))
-plt.scatter(df['params_total'], df['val_acc'],
-           c=df['position'].astype('category').cat.codes,
-           alpha=0.7)
-plt.xlabel('Parameters')
-plt.ylabel('Validation Accuracy')
-plt.colorbar(label='Position')
-plt.show()
-```
 
 ## Architecture Details
 
@@ -339,11 +317,11 @@ Input (3×32×32)
     ↓
 Stem: Conv3x3(3→64) + BN + ReLU
     ↓
-Stage A (Early): 64→64, stride=1, high-res
+Stage A (Early): 64→64, stride=1, high-res, 3x blocks
     ↓
-Stage B (Mid): 64→128, stride=2, medium-res
+Stage B (Mid): 64→128, stride=2, medium-res, 3x blocks
     ↓
-Stage C (Late): 128→256, stride=2, low-res
+Stage C (Late): 128→256, stride=2, low-res, 3x blocks
     ↓
 Head: AdaptiveAvgPool + Linear(256→classes)
     ↓
@@ -375,9 +353,7 @@ def __init__(self, in_channels: int, out_channels: int, stride: int = 1):
 All blocks are defined in the BlockZoo registry and follow the unified (in_channels, out_channels, stride) interface:
 
 - **ResNet blocks**: `ResNetBasicBlock`, `ResNetBottleneck`
-- **EfficientNet blocks**: `InvertedResidual`, `UniversalInvertedResidual`, `EdgeResidual`
-- **Simple fallback blocks**: `SimpleResidualBlock`
-- **Basic BlockZoo blocks**: `BasicBlock`
+- **EfficientNet blocks**: `InvertedResidual`, `UniversalInvertedBlock`, `EdgeResidual`
 
 To see all available blocks:
 ```python
@@ -411,7 +387,7 @@ python -m pytest tests/ --cov=blockzoo --cov-report=html
 python -m blockzoo.train ResNetBasicBlock --position mid --epochs 10 --experiment-name "resnet-basic"
 
 # Simple Residual Block
-python -m blockzoo.train SimpleResidualBlock --position mid --epochs 10 --experiment-name "simple-residual"
+python -m blockzoo.train InvertedResidualBlock --position mid --epochs 10 --experiment-name "simple-residual"
 
 # Compare results
 python -c "

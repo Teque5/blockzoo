@@ -7,12 +7,10 @@ plots for analyzing block performance across different positions.
 import argparse
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
 import matplotlib.pyplot as plt
 import pandas as pd
-import seaborn as sns
-from matplotlib.markers import MarkerStyle
 
 
 def load_results(csv_path: str) -> pd.DataFrame:
@@ -39,13 +37,14 @@ def load_results(csv_path: str) -> pd.DataFrame:
         raise FileNotFoundError(f"Results file not found: {csv_path}")
 
     df = pd.read_csv(csv_path)
+
     # Check for required columns
-    required_cols = ["val_acc", "throughput", "position", "block"]
+    required_cols = ["val_acc", "position", "block"]
     missing_cols = [col for col in required_cols if col not in df.columns]
     if missing_cols:
         raise ValueError(f"Missing required columns: {missing_cols}")
 
-    # Filter out rows with missing data
+    # Filter out rows with missing data for core columns
     df = df.dropna(subset=required_cols)
 
     if len(df) == 0:
@@ -54,36 +53,62 @@ def load_results(csv_path: str) -> pd.DataFrame:
     return df
 
 
-def create_accuracy_throughput_plot(df: pd.DataFrame, output_path: Optional[str] = None) -> None:
-    """Create accuracy vs throughput scatter plot.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Results dataframe with columns: val_acc, throughput, position, block
-    output_path : str, optional
-        Path to save the plot. If None, displays the plot.
-    """
-    # Set up the plot style
-    plt.style.use("seaborn-v0_8")
-
-    fig, ax = plt.subplots(figsize=(12, 8))
-
-    # Define position styles (markers and line styles)
-    position_styles = {
+def get_position_styles():
+    """Get consistent position styling."""
+    return {
         "early": {"marker": "o", "linestyle": "-", "markersize": 8},
         "mid": {"marker": "s", "linestyle": "--", "markersize": 8},
         "late": {"marker": "^", "linestyle": "-.", "markersize": 8},
     }
 
-    # Get unique blocks and assign colors
-    blocks = df["block"].unique()
+
+def get_block_colors(blocks):
+    """Get consistent color mapping for blocks."""
     colors = plt.cm.tab10(range(len(blocks)))
-    block_colors = dict(zip(blocks, colors))
+    return dict(zip(blocks, colors))
+
+
+def create_scatter_plot(df: pd.DataFrame, x_col: str, y_col: str, x_label: str, y_label: str, title: str, output_path: str) -> None:
+    """Create a generic accuracy scatter plot.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Results dataframe
+    x_col : str
+        Column name for x-axis data
+    y_col : str
+        Column name for y-axis data (should be 'val_acc')
+    x_label : str
+        Label for x-axis
+    y_label : str
+        Label for y-axis
+    title : str
+        Plot title
+    output_path : str
+        Path to save the plot
+    """
+    plt.style.use("seaborn-v0_8")
+    fig, ax = plt.subplots(figsize=(12, 8))
+
+    # Check if required columns exist
+    if x_col not in df.columns:
+        print(f"Warning: Column '{x_col}' not found, skipping plot")
+        return
+
+    # Filter out rows with missing data for this plot
+    plot_df = df.dropna(subset=[x_col, y_col])
+    if len(plot_df) == 0:
+        print(f"Warning: No valid data for {x_col} vs {y_col} plot")
+        return
+
+    position_styles = get_position_styles()
+    blocks = plot_df["block"].unique()
+    block_colors = get_block_colors(blocks)
 
     # Create scatter plot for each block-position combination
     for block in blocks:
-        block_data = df[df["block"] == block]
+        block_data = plot_df[plot_df["block"] == block]
 
         for position in ["early", "mid", "late"]:
             pos_data = block_data[block_data["position"] == position]
@@ -96,8 +121,8 @@ def create_accuracy_throughput_plot(df: pd.DataFrame, output_path: Optional[str]
 
             # Plot points
             ax.scatter(
-                pos_data["throughput"],
-                pos_data["val_acc"],
+                pos_data[x_col],
+                pos_data[y_col],
                 color=color,
                 marker=style["marker"],
                 s=style["markersize"] ** 2,
@@ -109,109 +134,84 @@ def create_accuracy_throughput_plot(df: pd.DataFrame, output_path: Optional[str]
 
     # Connect points for the same block across positions with lines
     for block in blocks:
-        block_data = df[df["block"] == block]
+        block_data = plot_df[plot_df["block"] == block]
 
         # Group by position and get mean values for line plotting
-        pos_means = block_data.groupby("position").agg({"throughput": "mean", "val_acc": "mean"}).reindex(["early", "mid", "late"])
+        pos_means = block_data.groupby("position").agg({x_col: "mean", y_col: "mean"}).reindex(["early", "mid", "late"])
 
         # Only plot line if we have data for multiple positions
         valid_positions = pos_means.dropna()
         if len(valid_positions) >= 2:
-            ax.plot(valid_positions["throughput"], valid_positions["val_acc"], color=block_colors[block], alpha=0.6, linewidth=2, linestyle="-")
+            ax.plot(valid_positions[x_col], valid_positions[y_col], color=block_colors[block], alpha=0.6, linewidth=2, linestyle="-")
 
     # Customize the plot
-    ax.set_xlabel("Throughput (images/second)", fontsize=12, fontweight="bold")
-    ax.set_ylabel("Validation Accuracy", fontsize=12, fontweight="bold")
-    ax.set_title("Block Performance: Accuracy vs Throughput by Position", fontsize=14, fontweight="bold", pad=20)
+    ax.set_ylim(0.7, 1)
+    ax.set_xlabel(x_label, fontsize=12, fontweight="bold")
+    ax.set_ylabel(y_label, fontsize=12, fontweight="bold")
+    ax.set_title(title, fontsize=14, fontweight="bold", pad=20)
 
     # Add grid
     ax.grid(True, alpha=0.3)
 
-    # Create custom legend
-    # First, create legend for positions (markers)
-    position_legend_elements = []
+    # Create compact combined legend
+    legend_elements = []
+
+    # Position markers section
     for pos, style in position_styles.items():
-        position_legend_elements.append(
-            plt.Line2D([0], [0], marker=style["marker"], color="black", linestyle="None", markersize=8, label=f"{pos.title()} Position")
-        )
+        legend_elements.append(plt.Line2D([0], [0], marker=style["marker"], color="black", linestyle="None", markersize=8, label=f"{pos.title()} Position"))
 
-    # Create legend for blocks (colors)
-    block_legend_elements = []
+    # Block colors section
     for block, color in block_colors.items():
-        block_legend_elements.append(plt.Line2D([0], [0], marker="o", color=color, linestyle="None", markersize=8, label=block))
+        legend_elements.append(plt.Line2D([0], [0], marker="o", color=color, linestyle="None", markersize=8, label=block))
 
-    # Create two separate legends
-    pos_legend = ax.legend(handles=position_legend_elements, title="Position", loc="upper left", bbox_to_anchor=(0.02, 0.98))
-    pos_legend.get_title().set_fontweight("bold")
+    # Create single legend with two columns
+    legend = ax.legend(
+        handles=legend_elements,
+        ncol=2,
+        loc="lower right",
+    )
 
-    block_legend = ax.legend(handles=block_legend_elements, title="Block Type", loc="lower right", bbox_to_anchor=(0.98, 0.02))
-    block_legend.get_title().set_fontweight("bold")
-
-    # Add the position legend back (since legend() replaces the previous one)
-    ax.add_artist(pos_legend)
-
-    # Adjust layout
+    # Adjust layout and save
     plt.tight_layout()
-
-    # Save or display
-    if output_path:
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
-        print(f"Plot saved to: {output_path}")
-    else:
-        plt.show()
+    plt.savefig(output_path, dpi=300, bbox_inches="tight")
+    plt.close()
+    print(f"Plot saved to: {output_path}")
 
 
-def print_summary_stats(df: pd.DataFrame) -> None:
-    """Print summary statistics for the results.
+def create_all_plots(df: pd.DataFrame, output_dir: str = ".") -> None:
+    """Create all four accuracy comparison plots.
 
     Parameters
     ----------
     df : pd.DataFrame
-        Results dataframe.
+        Results dataframe
+    output_dir : str
+        Directory to save plots
     """
-    print("\n" + "=" * 60)
-    print("BLOCKZOO RESULTS SUMMARY")
-    print("=" * 60)
+    output_path = Path(output_dir)
+    output_path.mkdir(exist_ok=True)
 
-    print(f"Total experiments: {len(df)}")
-    print(f"Unique blocks: {len(df['block'].unique())}")
-    print(f"Positions tested: {sorted(df['position'].unique())}")
+    # Plot configurations: (column, label, filename)
+    plot_configs = [
+        # ("throughput", "Throughput (images/second)", "accuracy_vs_throughput.png"),
+        ("params_total", "Total Parameters", "accuracy_vs_params.png"),
+        ("memory_mb", "Memory Usage (MB)", "accuracy_vs_memory.png"),
+        ("latency_ms", "Latency (ms)", "accuracy_vs_latency.png"),
+    ]
 
-    print(f"\nAccuracy range: {df['val_acc'].min():.3f} - {df['val_acc'].max():.3f}")
-    print(f"Throughput range: {df['throughput'].min():.1f} - {df['throughput'].max():.1f} img/s")
+    for x_col, x_label, filename in plot_configs:
+        title = f"Block Performance: Accuracy vs {x_label.split('(')[0].strip()}"
+        output_file = output_path / filename
 
-    # Best performing configurations
-    print(f"\nTop 5 by Accuracy:")
-    top_acc = df.nlargest(5, "val_acc")[["block", "position", "val_acc", "throughput"]]
-    for _, row in top_acc.iterrows():
-        print(f"  {row['block']} ({row['position']}): {row['val_acc']:.3f} acc, {row['throughput']:.0f} img/s")
-
-    print(f"\nTop 5 by Throughput:")
-    top_throughput = df.nlargest(5, "throughput")[["block", "position", "val_acc", "throughput"]]
-    for _, row in top_throughput.iterrows():
-        print(f"  {row['block']} ({row['position']}): {row['throughput']:.0f} img/s, {row['val_acc']:.3f} acc")
-
-    # Position analysis
-    print(f"\nPerformance by Position:")
-    pos_stats = df.groupby("position").agg({"val_acc": ["mean", "std"], "throughput": ["mean", "std"]}).round(3)
-
-    for pos in ["early", "mid", "late"]:
-        if pos in pos_stats.index:
-            acc_mean = pos_stats.loc[pos, ("val_acc", "mean")]
-            acc_std = pos_stats.loc[pos, ("val_acc", "std")]
-            thr_mean = pos_stats.loc[pos, ("throughput", "mean")]
-            thr_std = pos_stats.loc[pos, ("throughput", "std")]
-            print(f"  {pos.title()}: {acc_mean:.3f}±{acc_std:.3f} acc, {thr_mean:.0f}±{thr_std:.0f} img/s")
+        create_scatter_plot(df=df, x_col=x_col, y_col="val_acc", x_label=x_label, y_label="Validation Accuracy", title=title, output_path=str(output_file))
 
 
 def main():
     """Main entry point for visualization CLI."""
-    parser = argparse.ArgumentParser(description="Visualize BlockZoo benchmark results", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(description="Generate BlockZoo benchmark visualization plots", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument("csv_path", help="Path to the results CSV file")
-    parser.add_argument("--output", "-o", help="Output path for the plot (PNG/PDF). If not specified, displays the plot.")
-    parser.add_argument("--summary", "-s", action="store_true", help="Print summary statistics")
-    parser.add_argument("--figsize", nargs=2, type=float, default=[12, 8], metavar=("WIDTH", "HEIGHT"), help="Figure size in inches")
+    parser.add_argument("--output-dir", "-o", default="plots", help="Output directory for plots (default: current directory)")
 
     args = parser.parse_args()
 
@@ -219,17 +219,17 @@ def main():
         # Load results
         print(f"Loading results from: {args.csv_path}")
         df = load_results(args.csv_path)
+        print(f"Loaded {len(df)} experiments")
 
-        # Print summary if requested
-        if args.summary:
-            print_summary_stats(df)
+        # Create all plots
+        print("Generating visualization plots...")
+        create_all_plots(df, args.output_dir)
 
-        # Create visualization
-        print("Generating accuracy vs throughput plot...")
-        create_accuracy_throughput_plot(df, args.output)
-
-        if not args.output:
-            print("Close the plot window to continue...")
+        print("\nGenerated plots:")
+        print("  • accuracy_vs_throughput.png - Accuracy vs Throughput")
+        print("  • accuracy_vs_params.png - Accuracy vs Parameters")
+        print("  • accuracy_vs_memory.png - Accuracy vs Memory Usage")
+        print("  • accuracy_vs_latency.png - Accuracy vs Latency")
 
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)

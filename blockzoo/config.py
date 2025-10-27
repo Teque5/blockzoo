@@ -5,9 +5,12 @@ CLI arguments and experiment settings across the BlockZoo framework.
 """
 
 import argparse
+import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -57,7 +60,7 @@ class ExperimentConfig:
     # training configuration
     dataset: str = "cifar10"
     epochs: int = 10
-    batch_size: int = 32
+    batch_size: int = 256
     learning_rate: float = 0.001
 
     # system configuration
@@ -149,7 +152,7 @@ def create_train_parser() -> argparse.ArgumentParser:
     )
 
     # required arguments
-    parser.add_argument("block", help="Fully qualified name of the block class (e.g., 'timm.models.resnet.BasicBlock')")
+    parser.add_argument("block", help="Block class name (e.g., 'ResNetBasicBlock')")
 
     # model configuration
     parser.add_argument("--position", choices=["early", "mid", "late"], default="mid", help="Position to place the block in scaffold")
@@ -159,7 +162,7 @@ def create_train_parser() -> argparse.ArgumentParser:
     # training configuration
     parser.add_argument("--dataset", choices=["cifar10", "cifar100", "imagenet"], default="cifar10", help="Dataset to use for training")
     parser.add_argument("--epochs", type=int, default=10, help="Number of training epochs")
-    parser.add_argument("--batch-size", type=int, default=32, help="Batch size for training")
+    parser.add_argument("--batch-size", type=int, default=256, help="Batch size for training")
     parser.add_argument("--lr", "--learning-rate", type=float, default=0.001, dest="learning_rate", help="Learning rate for optimizer")
 
     # system configuration
@@ -312,8 +315,8 @@ def validate_config(config: ExperimentConfig) -> None:
 
     # check channel and spatial dimensions (ignore batch size)
     if config.input_shape[1:] != expected_input_size:
-        print(f"[BlockZoo] Warning: Input shape {config.input_shape[1:]} doesn't match " f"expected {expected_input_size} for {config.dataset}")
+        log.warning(f"[BlockZoo] Warning: Input shape {config.input_shape[1:]} doesn't match " f"expected {expected_input_size} for {config.dataset}")
 
     # validate output dimension
     if config.out_dim != dataset_config["num_classes"]:
-        print(f"[BlockZoo] Warning: Output dimension {config.out_dim} doesn't match " f"expected {dataset_config['num_classes']} for {config.dataset}")
+        log.warning(f"[BlockZoo] Warning: Output dimension {config.out_dim} doesn't match " f"expected {dataset_config['num_classes']} for {config.dataset}")

@@ -5,6 +5,7 @@ runtime performance including latency and throughput.
 """
 
 import argparse
+import logging
 import sys
 import time
 from typing import Any, Dict, List, Tuple
@@ -15,6 +16,8 @@ from torch import nn
 
 from .scaffold import ScaffoldNet
 from .wrappers import get_block_class
+
+log = logging.getLogger(__name__)
 
 
 def quick_benchmark(block_class_name: str, position: str = "mid") -> dict:
@@ -35,8 +38,9 @@ def quick_benchmark(block_class_name: str, position: str = "mid") -> dict:
 
     Examples
     --------
-    >>> results = quick_benchmark('BasicBlock', 'mid')
-    >>> print(f"Latency: {results['latency_ms']:.2f} ms")
+    >>> results = quick_benchmark('ResNetBasicBlock', 'mid')
+    >>> print(f"Latency: {results['latency_ms']:.2f} ms")  # doctest: +ELLIPSIS
+    Latency: ... ms
     """
     return benchmark_block_in_scaffold(block_name=block_class_name, position=position)
 
@@ -80,10 +84,9 @@ def benchmark_model(
 
     Examples
     --------
-    >>> from blockzoo.scaffold import BasicBlock, ScaffoldNet
-    >>> model = ScaffoldNet(BasicBlock, position='mid')
+    >>> from blockzoo.wrappers import ResNetBasicBlockWrapper
+    >>> model = ScaffoldNet(ResNetBasicBlockWrapper, position='mid')
     >>> results = benchmark_model(model, device='cpu')
-    >>> print(f"Latency: {results['latency_ms']:.2f} ms")
     """
     model = model.to(device)
     model.eval()
@@ -95,7 +98,7 @@ def benchmark_model(
     dummy_input = torch.randn(actual_input_shape).to(device)
 
     # warmup runs
-    print(f"[BlockZoo] Warming up with {warmup_runs} runs...")
+    log.info(f"[BlockZoo] Warming up with {warmup_runs} runs...")
     with torch.no_grad():
         for _ in range(warmup_runs):
             if device == "cuda":
@@ -105,7 +108,7 @@ def benchmark_model(
                 torch.cuda.synchronize()
 
     # benchmark runs
-    print(f"[BlockZoo] Benchmarking with {benchmark_runs} runs...")
+    log.info(f"[BlockZoo] Benchmarking with {benchmark_runs} runs...")
     latencies = []
 
     with torch.no_grad():
@@ -286,7 +289,7 @@ def main() -> None:
         description="Benchmark a convolutional block wrapped in ScaffoldNet", formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
-    parser.add_argument("block", help="Fully qualified name of the block class (e.g., 'timm.models.resnet.BasicBlock')")
+    parser.add_argument("block", help="block class name (e.g., 'ResNetBasicBlock')")
     parser.add_argument("--position", choices=["early", "mid", "late"], default="mid", help="Position to place the block in scaffold")
     parser.add_argument(
         "--input-shape",

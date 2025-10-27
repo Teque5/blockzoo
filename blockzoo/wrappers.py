@@ -10,125 +10,81 @@ from functools import partial
 from typing import Any, Callable, Dict
 
 from timm.models._efficientnet_blocks import EdgeResidual, InvertedResidual, UniversalInvertedResidual
-from timm.models.resnet import BasicBlock as TimmBasicBlock
-from timm.models.resnet import Bottleneck
+from timm.models.resnet import BasicBlock as ResNetBasicBlock
+from timm.models.resnet import Bottleneck as ResNetBottleneck
+from timm.models.resnet import downsample_avg
 from torch import nn
 
-from .scaffold import BasicBlock as BlockZooBasicBlock
 
-
-def create_downsample_if_needed(in_channels: int, out_channels: int, stride: int) -> nn.Module:
-    """Create downsample layer for shortcut connection if channels or stride don't match."""
-    if stride != 1 or in_channels != out_channels:
-        return nn.Sequential(nn.Conv2d(in_channels, out_channels, 1, stride, bias=False), nn.BatchNorm2d(out_channels))
-    return None
-
-
-class SimpleResidualBlock(nn.Module):
-    """Simple residual block similar to ResNet BasicBlock."""
+class InvertedResidualWrapper(InvertedResidual):
+    """InvertedResidual from MobileNetV2 and EfficientNetV2, aka MBConv"""
 
     def __init__(self, in_channels: int, out_channels: int, stride: int = 1):
-        super().__init__()
-
-        self.conv1 = nn.Conv2d(in_channels, out_channels, 3, stride, 1, bias=False)
-        self.bn1 = nn.BatchNorm2d(out_channels)
-        self.relu = nn.ReLU(inplace=True)
-        self.conv2 = nn.Conv2d(out_channels, out_channels, 3, 1, 1, bias=False)
-        self.bn2 = nn.BatchNorm2d(out_channels)
-
-        if stride != 1 or in_channels != out_channels:
-            self.shortcut = nn.Sequential(nn.Conv2d(in_channels, out_channels, 1, stride, bias=False), nn.BatchNorm2d(out_channels))
-        else:
-            self.shortcut = nn.Identity()
-
-    def forward(self, x):
-        out = self.relu(self.bn1(self.conv1(x)))
-        out = self.bn2(self.conv2(out))
-        out += self.shortcut(x)
-        return self.relu(out)
+        super().__init__(
+            in_chs=in_channels,
+            out_chs=out_channels,
+            stride=stride,
+            exp_ratio=6.0,  # standard MobileNet expansion ratio
+        )
 
 
-# wrapper classes that adapt timm blocks to BlockZoo interface
-class InvertedResidualWrapper(nn.Module):
-    """Wrapper for timm InvertedResidual with BlockZoo interface."""
+class UniversalInvertedBottleneckWrapper(UniversalInvertedResidual):
+    """UniversalInvertedBottleneck from MobileNetV4, aka UIB"""
 
     def __init__(self, in_channels: int, out_channels: int, stride: int = 1):
-        super().__init__()
-        self.block = InvertedResidual(in_chs=in_channels, out_chs=out_channels, stride=stride, exp_ratio=6.0)  # standard MobileNet expansion ratio
-
-    def forward(self, x):
-        return self.block(x)
-
-
-class UniversalInvertedResidualWrapper(nn.Module):
-    """Wrapper for timm UniversalInvertedResidual with BlockZoo interface."""
-
-    def __init__(self, in_channels: int, out_channels: int, stride: int = 1):
-        super().__init__()
-        self.block = UniversalInvertedResidual(in_chs=in_channels, out_chs=out_channels, stride=stride, exp_ratio=4.0)  # standard expansion ratio for UIB
-
-    def forward(self, x):
-        return self.block(x)
+        super().__init__(
+            in_chs=in_channels,
+            out_chs=out_channels,
+            stride=stride,
+            exp_ratio=4.0,  # standard expansion ratio for UIB
+        )
 
 
-class EdgeResidualWrapper(nn.Module):
-    """Wrapper for timm EdgeResidual with BlockZoo interface."""
+class EdgeResidualWrapper(EdgeResidual):
+    """EdgeResidual from EfficientNet-Edge and EfficientNetV2, aka FusedMBConv"""
 
     def __init__(self, in_channels: int, out_channels: int, stride: int = 1):
-        super().__init__()
-        self.block = EdgeResidual(in_chs=in_channels, out_chs=out_channels, stride=stride, exp_ratio=6.0)  # standard expansion ratio
-
-    def forward(self, x):
-        return self.block(x)
-
-
-class ResNetBasicBlockWrapper(nn.Module):
-    """Wrapper for timm ResNet BasicBlock with BlockZoo interface."""
-
-    def __init__(self, in_channels: int, out_channels: int, stride: int = 1):
-        super().__init__()
-        # create downsample if needed
-        downsample = create_downsample_if_needed(in_channels, out_channels, stride)
-
-        self.block = TimmBasicBlock(inplanes=in_channels, planes=out_channels, stride=stride, downsample=downsample)
-
-    def forward(self, x):
-        return self.block(x)
+        super().__init__(
+            in_chs=in_channels,
+            out_chs=out_channels,
+            stride=stride,
+            exp_ratio=6.0,  # standard expansion ratio
+        )
 
 
-class ResNetBottleneckWrapper(nn.Module):
-    """Wrapper for timm ResNet Bottleneck with BlockZoo interface."""
+class ResNetBasicBlockWrapper(ResNetBasicBlock):
+    """ResNet BasicBlock from the foundational 2015 ResNet paper"""
 
     def __init__(self, in_channels: int, out_channels: int, stride: int = 1):
-        super().__init__()
-        # bottleneck expects planes (where planes * 4 = out_channels)
-        planes = out_channels // 4
-        if out_channels % 4 != 0:
-            planes = out_channels // 4 + 1
-            out_channels = planes * 4  # adjust to valid bottleneck output
+        super().__init__(
+            inplanes=in_channels,
+            planes=out_channels,
+            stride=stride,
+            downsample=downsample_avg(in_channels, out_channels, 1, stride=stride),
+        )
 
-        # create downsample if needed
-        downsample = create_downsample_if_needed(in_channels, out_channels, stride)
 
-        self.block = Bottleneck(inplanes=in_channels, planes=planes, stride=stride, downsample=downsample)
+class ResNetBottleneckWrapper(ResNetBottleneck):
+    """ResNet BottleneckBlock for deeper ResNet architectures from the 2015 ResNet paper"""
 
-    def forward(self, x):
-        return self.block(x)
+    def __init__(self, in_channels: int, out_channels: int, stride: int = 1):
+        # Note: ResNet Bottleneck uses planes where final output is planes * expansion (4),
+        # so as long as our in_channels are divisible by 4, we can set planes = out_channels // 4
+        super().__init__(
+            inplanes=in_channels,
+            planes=out_channels // 4,
+            stride=stride,
+            downsample=downsample_avg(in_channels, out_channels, 1, stride=stride),
+        )
 
 
 # block lookup table - maps block names to their wrapper classes
 BLOCK_REGISTRY: Dict[str, Callable[[int, int, int], nn.Module]] = {
-    # timm EfficientNet blocks
     "InvertedResidual": InvertedResidualWrapper,
-    "UniversalInvertedResidual": UniversalInvertedResidualWrapper,
+    "UniversalInvertedBottleneck": UniversalInvertedBottleneckWrapper,
     "EdgeResidual": EdgeResidualWrapper,
-    # timm ResNet blocks
     "ResNetBasicBlock": ResNetBasicBlockWrapper,
     "ResNetBottleneck": ResNetBottleneckWrapper,
-    # custom simple blocks (fallbacks)
-    "SimpleResidualBlock": SimpleResidualBlock,
-    # blockzoo basic block (for tests and simple cases)
-    "BasicBlock": BlockZooBasicBlock,
 }
 
 

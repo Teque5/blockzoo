@@ -14,7 +14,7 @@ from torchinfo import summary
 
 from .scaffold import ScaffoldNet
 from .utils import append_results, format_bytes
-from .wrappers import get_block_class
+from .wrappers import ResNetBasicBlockWrapper, get_block_class
 
 
 def quick_profile(block_class_name: str, position: str = "mid") -> dict:
@@ -35,8 +35,9 @@ def quick_profile(block_class_name: str, position: str = "mid") -> dict:
 
     Examples
     --------
-    >>> results = quick_profile('BasicBlock', 'mid')
-    >>> print(f"Parameters: {results['params_total']}")
+    >>> results = quick_profile('ResNetBasicBlock', 'mid')
+    >>> results['params_total']
+    4505866
     """
     return profile_block_in_scaffold(block_name=block_class_name, position=position)
 
@@ -66,11 +67,10 @@ def get_model_profile(model: nn.Module, input_shape: Tuple[int, int, int, int] =
 
     Examples
     --------
-    >>> from blockzoo.scaffold import BasicBlock, ScaffoldNet
-    >>> model = ScaffoldNet(BasicBlock, position='mid')
+    >>> model = ScaffoldNet(ResNetBasicBlockWrapper, position='mid')
     >>> profile = get_model_profile(model)
     >>> profile['params_total']
-    1962314
+    4505866
     """
     model = model.to(device)
     model.eval()

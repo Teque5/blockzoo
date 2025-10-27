@@ -22,7 +22,7 @@ class TestScaffoldNet(unittest.TestCase):
                 model = ScaffoldNet(self.block_cls, position=position)
                 self.assertEqual(model.position, position)
                 self.assertEqual(model.num_blocks, 3)  # default
-                self.assertEqual(model.base_channels, 64)  # default
+                self.assertEqual(model.channels[0], 64)  # default
 
     def test_scaffold_forward_pass(self):
         """Test forward pass through ScaffoldNet."""
@@ -37,17 +37,12 @@ class TestScaffoldNet(unittest.TestCase):
                 # check that output is finite
                 self.assertTrue(torch.isfinite(output).all())
 
-    def test_scaffold_invalid_position(self):
-        """Test ScaffoldNet with invalid position."""
-        with self.assertRaises(ValueError):
-            ScaffoldNet(self.block_cls, position="invalid")
-
     def test_scaffold_custom_parameters(self):
         """Test ScaffoldNet with custom parameters."""
         model = ScaffoldNet(self.block_cls, position="mid", num_blocks=2, base_channels=32, out_dim=100)
 
         self.assertEqual(model.num_blocks, 2)
-        self.assertEqual(model.base_channels, 32)
+        self.assertEqual(model.channels[0], 32)
         self.assertEqual(model.out_dim, 100)
 
         # test forward pass with custom parameters

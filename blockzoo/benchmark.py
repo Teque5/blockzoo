@@ -17,6 +17,30 @@ from .scaffold import ScaffoldNet
 from .wrappers import get_block_class
 
 
+def quick_benchmark(block_class_name: str, position: str = "mid") -> dict:
+    """
+    Quick benchmarking of a block in ScaffoldNet.
+
+    Parameters
+    ----------
+    block_class_name : str
+        Fully qualified name of the block class.
+    position : str, optional
+        Position to place the block ('early', 'mid', 'late'). Default is 'mid'.
+
+    Returns
+    -------
+    dict
+        Benchmark results.
+
+    Examples
+    --------
+    >>> results = quick_benchmark('BasicBlock', 'mid')
+    >>> print(f"Latency: {results['latency_ms']:.2f} ms")
+    """
+    return benchmark_block_in_scaffold(block_name=block_class_name, position=position)
+
+
 def benchmark_model(
     model: nn.Module,
     input_shape: Tuple[int, int, int, int] = (1, 3, 32, 32),

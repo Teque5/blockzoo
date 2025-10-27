@@ -1,39 +1,32 @@
 # BlockZoo: Convolutional Block Benchmarking Framework
 
-Given the demise of benchmarks from paperswithcode and the ongoing need to evaluate convolutional building blocks, BlockZoo provides a standardized framework to benchmark and profile these blocks in isolation. By embedding blocks into a fixed scaffold architecture at different positions (early, mid, late), we can measure their specialization and performance across key metrics.
+Given the demise of benchmarks from paperswithcode and the ongoing need to evaluate convolutional building blocks, BlockZoo provides a standardized framework to benchmark and profile these blocks in isolation. By embedding blocks into a fixed scaffold architecture at different positions (early, mid, late), we can measure block specialization and performance.
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.2+-ee4c2c.svg)](https://pytorch.org/)
 [![Lightning](https://img.shields.io/badge/Lightning-2.0+-792ee5.svg)](https://lightning.ai/)
 
-## 🎯 Key Features
+## Features
 
-- **🔧 Scaffold Architecture**: Fixed stem → StageA → StageB → StageC → head for consistent evaluation
-- **📍 Positional Analysis**: Test blocks in early/mid/late positions to measure specialization
-- **📊 Comprehensive Profiling**: FLOPs, parameters, memory usage, and runtime benchmarking
-- **⚡ Lightning Integration**: Robust training pipeline with PyTorch Lightning
-- **📈 CSV Export**: Structured results for analysis and visualization
-- **🔌 Dynamic Loading**: Import any block class by qualified name
+- **Scaffold Architecture**: Fixed stem → StageA → StageB → StageC → head for consistent evaluation
+- **Positional Analysis**: Test blocks in early/mid/late positions to measure specialization
+- **Comprehensive Profiling**: FLOPs, parameters, memory usage, and runtime benchmarking
+- **Lightning Integration**: Robust training pipeline with PyTorch Lightning
+- **CSV Export**: Structured results for analysis and visualization
+- **Dynamic Loading**: Import any block class by qualified name
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/blockzoo.git
-cd blockzoo
-
-# Install in development mode
-pip install -e .
-
-# Or install dependencies manually
-pip install torch>=2.2 torchvision lightning>=2.0 timm torchinfo fvcore ptflops pandas numpy scikit-learn tqdm einops
+git clone git@github.com:Teque5/blockzoo.git
+pip install --editable .
 ```
 
 ### Basic Usage
 
-#### 1. Profile a Block (Quick)
+#### Profile a Block (Quick)
 
 ```bash
 # Profile a ResNet BasicBlock in mid position
@@ -47,9 +40,8 @@ python -m blockzoo.profiler ResNetBasicBlock --position mid
 #   Memory estimate:        1.2 MB
 ```
 
-#### 2. Benchmark Runtime Performance
+#### Benchmark Runtime Performance
 
-```bash
 ```bash
 python -m blockzoo.benchmark ResNetBasicBlock --position mid --device cuda
 
@@ -59,42 +51,35 @@ python -m blockzoo.benchmark ResNetBasicBlock --position mid --device cuda
 #   Backward pass: 2.345 ms (avg over 1000 runs)
 #   GPU memory: 45.6 MB
 ```
-```
 
-#### 3. Full Training & Evaluation
+#### Full Training & Evaluation
 
 ```bash
-# Train and evaluate across all aspects
+# profile, benchmark, train, and evaluate
 ```bash
 python -m blockzoo.train ResNetBasicBlock --position mid --epochs 5 --benchmark
+# see results/results.csv for logged metrics
 ```
 
-This command will:
-1. ✅ **Train** the model for 5 epochs
-2. ✅ **Profile** the block (FLOPs, params, memory)
-3. ✅ **Benchmark** runtime performance
-4. ✅ **Save** results to `results.csv`
+#### Running Comparisons
 
-### Running Comparisons
-
-Test the same block in different positions:
+Compare block performance across positions:
 
 ```bash
-python -m blockzoo.train ResNetBasicBlock --position early --epochs 10
-python -m blockzoo.train ResNetBasicBlock --position mid --epochs 10
-python -m blockzoo.train ResNetBasicBlock --position late --epochs 10
-
-# This will:
-# - Profile the model (FLOPs, params, memory)
-# - Train for 5 epochs on CIFAR-10
-# - Evaluate validation accuracy
-# - Benchmark runtime performance
-# - Save all results to results/results.csv
+python -m blockzoo.train ResNetBasicBlock --position early
+python -m blockzoo.train ResNetBasicBlock --position mid
+python -m blockzoo.train ResNetBasicBlock --position late
 ```
 
-## 🧭 Positional Specialization Protocol
+#### Run all benchmarks
 
-The core innovation of BlockZoo is measuring how blocks perform across different network positions:
+```bash
+python3 scripts/bench_all.py
+```
+
+## Positional Specialization Protocol
+
+The core innovation of BlockZoo is measuring how blocks perform across different network positions. This protocol helps identify whether blocks are specialized for local features (early layers) or global features (late layers).
 
 ### Protocol Overview
 
@@ -122,7 +107,7 @@ print(df.groupby('position')[['val_acc', 'params_total', 'latency_ms']].mean())
 "
 ```
 
-## 📖 Detailed Usage
+## Detailed Usage
 
 ### Command Line Interface
 
@@ -270,7 +255,7 @@ profile = blockzoo.get_model_profile(model)
 print(f"Custom block profile: {profile}")
 ```
 
-## 📊 Results Analysis
+## Results Analysis
 
 ### CSV Schema
 
@@ -345,7 +330,7 @@ plt.colorbar(label='Position')
 plt.show()
 ```
 
-## 🏗️ Architecture Details
+## Architecture Details
 
 ### ScaffoldNet Structure
 
@@ -400,7 +385,7 @@ from blockzoo.wrappers import list_available_blocks
 print("Available blocks:", list_available_blocks())
 ```
 
-## 🧪 Testing
+## Testing
 
 Run the test suite to verify installation:
 
@@ -417,7 +402,7 @@ python -m pytest tests/test_blockzoo.py::TestBenchmark -v
 python -m pytest tests/ --cov=blockzoo --cov-report=html
 ```
 
-## 📋 Examples
+## Examples
 
 ### Example 1: Compare ResNet vs DenseNet Blocks
 
@@ -469,7 +454,7 @@ python -m blockzoo.benchmark ResNetBasicBlock \
     --output results/batch_scaling.csv
 ```
 
-## 🔧 Advanced Configuration
+## Advanced Configuration
 
 ### Environment Variables
 
@@ -504,7 +489,7 @@ python -m pytest tests/ -v --cov=blockzoo
 ```
 ```
 
-## 🚨 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -533,7 +518,7 @@ import warnings
 warnings.filterwarnings("ignore", ".*dataloader.*")
 ```
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please:
 
@@ -566,4 +551,4 @@ python -m pytest tests/ -v --cov=blockzoo
 
 ---
 
-**Happy benchmarking! 🧩⚡**
+**Happy benchmarking!**

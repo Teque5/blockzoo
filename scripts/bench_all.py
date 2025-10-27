@@ -9,7 +9,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-# use blockzoo.wrappers for proper timm block integration
 from blockzoo.wrappers import list_available_blocks
 
 
@@ -36,7 +35,7 @@ def main():
             current += 1
             print(f"\n[{current}/{total_experiments}] {block} @ {position}")
 
-            cmd = [sys.executable, "-m", "blockzoo.train", f"blockzoo.wrappers.{block}", "--position", position, "--benchmark"]  # use wrappers module
+            cmd = [sys.executable, "-m", "blockzoo.train", f"{block}", "--position", position, "--benchmark"]  # use wrappers module
 
             try:
                 subprocess.run(cmd, check=True)

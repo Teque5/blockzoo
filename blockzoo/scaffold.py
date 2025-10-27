@@ -38,9 +38,8 @@ class ScaffoldNet(nn.Module):
 
     Examples
     --------
-    >>> from blockzoo.utils import safe_import
-    >>> BasicBlock = safe_import('timm.models.resnet.BasicBlock')
-    >>> model = ScaffoldNet(BasicBlock, position='mid', num_blocks=2)
+    >>> from blockzoo.wrappers import ResNetBasicBlockWrapper
+    >>> model = ScaffoldNet(ResNetBasicBlockWrapper, position='mid', num_blocks=2)
     >>> x = torch.randn(1, 3, 32, 32)
     >>> y = model(x)
     >>> print(y.shape)

@@ -1,25 +1,19 @@
-[build-system]
-requires = ["setuptools>=68", "wheel"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "blockzoo"
-version = "0.1.0"
-description = "Benchmark and profile convolutional building blocks for feature extraction."
+dynamic = ["version", "readme"]
+description = "Benchmark and profile convolutional building blocks."
 requires-python = ">=3.10"
 dependencies = [
-    "torch>=2.2",
-    "torchvision>=0.17",
     "einops",
+    "lightning>=2.0",
     "numpy",
     "pandas",
-    "tqdm",
-    "lightning>=2.0",
-    "timm",
     "scikit-learn",
+    "timm",
+    "torch>=2.2",
     "torchinfo",
-    "fvcore",
-    "ptflops"
+    "torchvision>=0.17",
+    "tqdm",
 ]
 
 [project.scripts]
@@ -29,31 +23,29 @@ blockzoo-benchmark = "blockzoo.benchmark:main"
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.0",
-    "pytest-cov",
     "black",
-    "flake8",
-    "mypy"
+    "coverage",
+    "pytest-cov",
+    "pytest",
 ]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 packages = ["blockzoo"]
 
+[tool.setuptools.dynamic]
+version = {attr = "blockzoo.__version__"}
+readme = {file = ["README.md"], content-type = "text/markdown"}
+
+[tool.coverage.run]
+branch = true
+source = ["blockzoo", "tests"]
+# -rA captures stdout from all tests and places it after the pytest summary
+command_line = "-m pytest -rA --doctest-modules"
+
 [tool.black]
 line-length = 160
 target-version = ['py310']
-
-[tool.mypy]
-python_version = "3.10"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-
-[[tool.mypy.overrides]]
-module = [
-    "torchinfo.*",
-    "fvcore.*",
-    "ptflops.*",
-    "timm.*"
-]
-ignore_missing_imports = true

@@ -9,13 +9,11 @@ The lookup table maps block names to wrapper functions that return properly conf
 from functools import partial
 from typing import Any, Callable, Dict
 
-# import timm blocks
 from timm.models._efficientnet_blocks import EdgeResidual, InvertedResidual, UniversalInvertedResidual
 from timm.models.resnet import BasicBlock as TimmBasicBlock
 from timm.models.resnet import Bottleneck
 from torch import nn
 
-# import blockzoo blocks
 from .scaffold import BasicBlock as BlockZooBasicBlock
 
 
@@ -26,7 +24,6 @@ def create_downsample_if_needed(in_channels: int, out_channels: int, stride: int
     return None
 
 
-# simple custom blocks for fallback when timm blocks aren't available
 class SimpleResidualBlock(nn.Module):
     """Simple residual block similar to ResNet BasicBlock."""
 

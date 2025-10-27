@@ -141,7 +141,7 @@ def ensure_directory(path: str) -> Path:
 
     Examples
     --------
-    >>> results_dir = ensure_directory('results/experiments')
+    >>> results_dir = ensure_directory('results')
     >>> print(results_dir.exists())
     True
     """

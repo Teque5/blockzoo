@@ -9,16 +9,36 @@ import sys
 from typing import Any, Dict, Tuple
 
 import torch
-from fvcore.nn import FlopCountAnalysis
-from ptflops import get_model_complexity_info
 from torch import nn
-
-# required imports - assume all dependencies installed
 from torchinfo import summary
 
 from .scaffold import ScaffoldNet
-from .utils import format_bytes
+from .utils import append_results, format_bytes
 from .wrappers import get_block_class
+
+
+def quick_profile(block_class_name: str, position: str = "mid") -> dict:
+    """
+    Quick profiling of a block in ScaffoldNet.
+
+    Parameters
+    ----------
+    block_class_name : str
+        Fully qualified name of the block class.
+    position : str, optional
+        Position to place the block ('early', 'mid', 'late'). Default is 'mid'.
+
+    Returns
+    -------
+    dict
+        Profiling results.
+
+    Examples
+    --------
+    >>> results = quick_profile('BasicBlock', 'mid')
+    >>> print(f"Parameters: {results['params_total']}")
+    """
+    return profile_block_in_scaffold(block_name=block_class_name, position=position)
 
 
 def get_model_profile(model: nn.Module, input_shape: Tuple[int, int, int, int] = (1, 3, 32, 32), device: str = "cpu") -> Dict[str, Any]:
@@ -49,7 +69,8 @@ def get_model_profile(model: nn.Module, input_shape: Tuple[int, int, int, int] =
     >>> from blockzoo.scaffold import BasicBlock, ScaffoldNet
     >>> model = ScaffoldNet(BasicBlock, position='mid')
     >>> profile = get_model_profile(model)
-    >>> print(f"Parameters: {profile['params_total']}")
+    >>> profile['params_total']
+    1962314
     """
     model = model.to(device)
     model.eval()
@@ -69,39 +90,11 @@ def get_model_profile(model: nn.Module, input_shape: Tuple[int, int, int, int] =
     # method 1: Use torchinfo (most comprehensive)
     with torch.no_grad():
         model_summary = summary(model, input_size=input_shape, device=device, verbose=0)
-        # extract memory estimate from torchinfo
-        if hasattr(model_summary, "total_param_bytes"):
-            profile["memory_mb"] = model_summary.total_param_bytes / (1024**2)
-        elif hasattr(model_summary, "total_params"):
-            # rough estimate: 4 bytes per float32 parameter
-            profile["memory_mb"] = (model_summary.total_params * 4) / (1024**2)
-
-    # method 2: Use fvcore for FLOPs
-    with torch.no_grad():
-        flops = FlopCountAnalysis(model, dummy_input)
-        profile["flops"] = flops.total()
-
-    # method 3: Use ptflops as fallback for FLOPs if fvcore didn't work
-    if profile["flops"] == 0:
-        # ptflops expects input shape without batch dimension
-        input_shape_no_batch = input_shape[1:]
-        with torch.no_grad():
-            flops, params = get_model_complexity_info(model, input_shape_no_batch, print_per_layer_stat=False, as_strings=False)
-            profile["flops"] = flops
-            # cross-check parameter count
-            if profile["params_total"] == 0:
-                profile["params_total"] = params
-
-    # fallback memory estimate if not available from torchinfo
-    if profile["memory_mb"] == 0.0:
-        # rough estimate: 4 bytes per parameter + activation memory
-        param_memory = (profile["params_total"] * 4) / (1024**2)
-        # estimate activation memory (very rough)
-        with torch.no_grad():
-            _ = model(dummy_input)
-            # approximate activation memory based on input size
-            activation_memory = (dummy_input.numel() * 4 * 10) / (1024**2)  # factor of 10 for intermediate activations
-            profile["memory_mb"] = param_memory + activation_memory
+        profile["memory_mb"] = model_summary.total_param_bytes / (1024**2)
+        # rough estimate: 4 bytes per float32 parameter
+        profile["memory_mb"] = (model_summary.total_params * 4) / (1024**2)
+        # to quote NVIDIA: "Each multiply-add comprises two operations, thus one would multiply the throughput in the table by 2 to get FLOP counts per clock."
+        profile["flops"] = model_summary.total_mult_adds * 2
 
     return profile
 
@@ -206,7 +199,6 @@ def main() -> None:
 
         # optionally save to CSV
         if args.output:
-            from .utils import append_results
 
             append_results(args.output, profile)
             print(f"\n[BlockZoo] Results appended to {args.output}")

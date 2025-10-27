@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from blockzoo.config import ExperimentConfig
-from blockzoo.scaffold import BasicBlock, ScaffoldNet
+from blockzoo.scaffold import ScaffoldNet
 from blockzoo.train import BlockZooLightningModule, create_model_from_config
 
 

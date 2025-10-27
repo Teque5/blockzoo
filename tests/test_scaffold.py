@@ -4,7 +4,8 @@ import unittest
 
 import torch
 
-from blockzoo.scaffold import BasicBlock, ScaffoldNet
+from blockzoo.scaffold import ScaffoldNet
+from blockzoo.wrappers import ResNetBasicBlockWrapper
 
 
 class TestScaffoldNet(unittest.TestCase):
@@ -12,7 +13,7 @@ class TestScaffoldNet(unittest.TestCase):
 
     def setUp(self):
         """Set up test fixtures."""
-        self.block_cls = BasicBlock
+        self.block_cls = ResNetBasicBlockWrapper
         self.input_tensor = torch.randn(2, 3, 32, 32)
 
     def test_scaffold_creation_all_positions(self):
@@ -59,28 +60,6 @@ class TestScaffoldNet(unittest.TestCase):
         self.assertEqual(info["position"], "early")
         self.assertEqual(info["num_blocks"], 4)
         self.assertEqual(info["active_stage"], "stage1")
-
-
-class TestBasicBlock(unittest.TestCase):
-    """Test cases for BasicBlock."""
-
-    def test_basic_block_forward(self):
-        """Test BasicBlock forward pass."""
-        block = BasicBlock(64, 64)
-        x = torch.randn(2, 64, 16, 16)
-        output = block(x)
-
-        self.assertEqual(output.shape, (2, 64, 16, 16))
-        self.assertTrue(torch.isfinite(output).all())
-
-    def test_basic_block_stride(self):
-        """Test BasicBlock with stride."""
-        block = BasicBlock(64, 128, stride=2)
-        x = torch.randn(2, 64, 16, 16)
-        output = block(x)
-
-        # output should have different channels and spatial size
-        self.assertEqual(output.shape, (2, 128, 8, 8))
 
 
 if __name__ == "__main__":

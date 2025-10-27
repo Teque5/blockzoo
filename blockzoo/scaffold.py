@@ -20,8 +20,7 @@ class ScaffoldNet(nn.Module):
     Parameters
     ----------
     block_cls : type
-        A class implementing a block with signature
-        `block_cls(in_channels, out_channels, stride=1)`.
+        A class implementing a block with signature with kwargs (in_channels, out_channels, stride).
     position : {'early', 'mid', 'late'}
         Where to place the provided block (Stage A, B, or C).
     num_blocks : int, optional
@@ -145,27 +144,3 @@ class ScaffoldNet(nn.Module):
             "head_channels": self.channels[-1],
             "active_stage": f'stage{["early", "mid", "late"].index(self.position) + 1}',
         }
-
-
-class BasicBlock(nn.Module):
-    """
-    Simple basic block for testing purposes and as stand-in for non-target stages.
-
-    Parameters
-    ----------
-    in_channels : int
-        Number of input channels.
-    out_channels : int
-        Number of output channels.
-    stride : int, optional
-        Stride for convolution (default: 1).
-    """
-
-    def __init__(self, in_channels: int, out_channels: int, stride: int = 1):
-        super().__init__()
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1)
-        self.bn = nn.BatchNorm2d(out_channels)
-        self.relu = nn.ReLU(inplace=True)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.relu(self.bn(self.conv(x)))

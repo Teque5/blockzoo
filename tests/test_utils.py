@@ -7,7 +7,6 @@ from pathlib import Path
 
 import pandas as pd
 
-from blockzoo.scaffold import BasicBlock
 from blockzoo.utils import append_results, format_bytes, load_results
 
 

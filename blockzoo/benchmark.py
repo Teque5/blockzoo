@@ -14,7 +14,7 @@ import torch
 from torch import nn
 
 from .scaffold import ScaffoldNet
-from .utils import safe_import
+from .wrappers import get_block_class
 
 
 def benchmark_model(
@@ -144,7 +144,7 @@ def print_benchmark_results(results: Dict[str, Any], model_name: str = "Model") 
 
 
 def benchmark_block_in_scaffold(
-    block_qualified_name: str,
+    block_name: str,
     position: str = "mid",
     input_shape: Tuple[int, int, int, int] = (1, 3, 32, 32),
     device: str = "cpu",
@@ -158,8 +158,8 @@ def benchmark_block_in_scaffold(
 
     Parameters
     ----------
-    block_qualified_name : str
-        Fully qualified name of the block class to import.
+    block_name : str
+        Name of the block in the block registry (e.g., 'InvertedResidual').
     position : str, optional
         Position to place the block ('early', 'mid', 'late'). Default is 'mid'.
     input_shape : tuple of int, optional
@@ -185,8 +185,8 @@ def benchmark_block_in_scaffold(
     ImportError
         If the block class cannot be imported.
     """
-    # import the block class
-    block_cls = safe_import(block_qualified_name)
+    # get the block class from registry
+    block_cls = get_block_class(block_name)
 
     # create scaffolded model
     model = ScaffoldNet(block_cls=block_cls, position=position, num_blocks=num_blocks, base_channels=64, out_dim=10)
@@ -197,7 +197,7 @@ def benchmark_block_in_scaffold(
     )
 
     # add metadata
-    results.update({"block_class": block_qualified_name, "position": position, "num_blocks": num_blocks})
+    results.update({"block_class": block_name, "position": position, "num_blocks": num_blocks})
 
     return results
 
@@ -290,7 +290,7 @@ def main() -> None:
     try:
         if args.multi_batch:
             # multi-batch benchmark
-            block_cls = safe_import(args.block)
+            block_cls = get_block_class(args.block)
             model = ScaffoldNet(block_cls=block_cls, position=args.position, num_blocks=args.num_blocks, base_channels=64, out_dim=10)
 
             results = benchmark_multiple_batch_sizes(
@@ -317,7 +317,7 @@ def main() -> None:
         else:
             # single benchmark
             results = benchmark_block_in_scaffold(
-                block_qualified_name=args.block,
+                block_name=args.block,
                 position=args.position,
                 input_shape=tuple(args.input_shape),
                 device=args.device,

@@ -1,5 +1,5 @@
 """
-Block wrappers for external libraries.
+Block wrappers for external block architectures.
 
 This module provides a unified interface for blocks from different libraries
 (like timm) that may have different constructor signatures than what BlockZoo expects.
@@ -9,11 +9,14 @@ The lookup table maps block names to wrapper functions that return properly conf
 from functools import partial
 from typing import Any, Callable, Dict
 
-import torch.nn as nn
+from torch import nn
 
 # import timm blocks
-from timm.models._efficientnet_blocks import EdgeResidual, InvertedResidual, UniversalInvertedResidual
-from timm.models.resnet import BasicBlock, Bottleneck
+from timm.models._efficientnet_blocks import InvertedResidual, UniversalInvertedResidual, EdgeResidual
+from timm.models.resnet import BasicBlock as TimmBasicBlock, Bottleneck
+
+# import blockzoo blocks
+from .scaffold import BasicBlock as BlockZooBasicBlock
 
 
 def create_downsample_if_needed(in_channels: int, out_channels: int, stride: int) -> nn.Module:
@@ -175,7 +178,7 @@ class ResNetBottleneckWrapper(nn.Module):
 _TimmInvertedResidual = InvertedResidual
 _TimmUniversalInvertedResidual = UniversalInvertedResidual
 _TimmEdgeResidual = EdgeResidual
-_TimmBasicBlock = BasicBlock
+_TimmBasicBlock = TimmBasicBlock
 _TimmBottleneck = Bottleneck
 
 # block lookup table - maps block names to their wrapper classes
@@ -189,6 +192,9 @@ BLOCK_REGISTRY: Dict[str, Callable[[int, int, int], nn.Module]] = {
     "ResNetBottleneck": ResNetBottleneckWrapper,
     # custom simple blocks (fallbacks)
     "SimpleResidualBlock": SimpleResidualBlock,
+
+    # blockzoo basic block (for tests and simple cases)
+    "BasicBlock": BlockZooBasicBlock,
 }
 
 

@@ -11,13 +11,11 @@ from datetime import datetime
 from typing import Any, Dict, Optional, Tuple
 
 import lightning as L
-import pandas as pd
 import torch
 import torch.nn.functional as F
 import torchvision
 import torchvision.transforms as transforms
-from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
-from lightning.pytorch.loggers import TensorBoardLogger
+from lightning.pytorch.callbacks import EarlyStopping
 from torch import nn
 from torch.utils.data import DataLoader
 
@@ -25,7 +23,8 @@ from .benchmark import benchmark_model, print_benchmark_results
 from .config import ExperimentConfig, get_dataset_config, parse_train_args, validate_config
 from .profiler import get_model_profile, print_profile
 from .scaffold import ScaffoldNet
-from .utils import append_results, safe_import
+from .utils import append_results
+from .wrappers import get_block_class
 
 # suppress Lightning warnings for cleaner output
 warnings.filterwarnings("ignore", ".*does not have many workers.*")
@@ -165,8 +164,8 @@ def create_model_from_config(config: ExperimentConfig) -> ScaffoldNet:
     ScaffoldNet
         Configured model.
     """
-    # import the block class
-    block_cls = safe_import(config.block_class)
+    # get the block class from registry
+    block_cls = get_block_class(config.block_class)
 
     # create scaffolded model
     model = ScaffoldNet(block_cls=block_cls, position=config.position, num_blocks=config.num_blocks, base_channels=config.base_channels, out_dim=config.out_dim)

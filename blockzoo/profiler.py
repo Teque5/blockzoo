@@ -6,7 +6,7 @@ parameters, FLOPs, and memory usage using various profiling libraries.
 
 import argparse
 import sys
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Tuple
 
 import torch
 from fvcore.nn import FlopCountAnalysis
@@ -17,7 +17,8 @@ from torch import nn
 from torchinfo import summary
 
 from .scaffold import ScaffoldNet
-from .utils import format_bytes, safe_import
+from .utils import format_bytes
+from .wrappers import get_block_class
 
 
 def get_model_profile(model: nn.Module, input_shape: Tuple[int, int, int, int] = (1, 3, 32, 32), device: str = "cpu") -> Dict[str, Any]:
@@ -125,15 +126,15 @@ def print_profile(profile: Dict[str, Any], model_name: str = "Model") -> None:
 
 
 def profile_block_in_scaffold(
-    block_qualified_name: str, position: str = "mid", input_shape: Tuple[int, int, int, int] = (1, 3, 32, 32), device: str = "cpu", num_blocks: int = 3
+    block_name: str, position: str = "mid", input_shape: Tuple[int, int, int, int] = (1, 3, 32, 32), device: str = "cpu", num_blocks: int = 3
 ) -> Dict[str, Any]:
     """
     Profile a block wrapped in ScaffoldNet.
 
     Parameters
     ----------
-    block_qualified_name : str
-        Fully qualified name of the block class to import.
+    block_name : str
+        Name of the block in the block registry (e.g., 'InvertedResidual').
     position : str, optional
         Position to place the block ('early', 'mid', 'late'). Default is 'mid'.
     input_shape : tuple of int, optional
@@ -153,8 +154,8 @@ def profile_block_in_scaffold(
     ImportError
         If the block class cannot be imported.
     """
-    # import the block class
-    block_cls = safe_import(block_qualified_name)
+    # get the block class from registry
+    block_cls = get_block_class(block_name)
 
     # create scaffolded model
     model = ScaffoldNet(block_cls=block_cls, position=position, num_blocks=num_blocks, base_channels=64, out_dim=10)
@@ -163,7 +164,7 @@ def profile_block_in_scaffold(
     profile = get_model_profile(model, input_shape, device)
 
     # add metadata
-    profile.update({"block_class": block_qualified_name, "position": position, "num_blocks": num_blocks, "input_shape": input_shape, "device": device})
+    profile.update({"block_class": block_name, "position": position, "num_blocks": num_blocks, "input_shape": input_shape, "device": device})
 
     return profile
 

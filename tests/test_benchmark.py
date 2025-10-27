@@ -31,10 +31,10 @@ class TestBenchmark(unittest.TestCase):
 
     def test_benchmark_block_in_scaffold(self):
         """Test benchmark_block_in_scaffold function."""
-        results = benchmark_block_in_scaffold("blockzoo.scaffold.BasicBlock", position="mid", warmup_runs=2, benchmark_runs=5)
+        results = benchmark_block_in_scaffold("BasicBlock", position="mid", warmup_runs=2, benchmark_runs=5)
 
         # check that additional metadata is included
-        self.assertEqual(results["block_class"], "blockzoo.scaffold.BasicBlock")
+        self.assertEqual(results["block_class"], "BasicBlock")
         self.assertEqual(results["position"], "mid")
 
 

@@ -5,64 +5,11 @@ and formatting utilities used throughout the BlockZoo framework.
 """
 
 import csv
-import importlib
 from pathlib import Path
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, Optional
 
 import pandas as pd
 
-
-def safe_import(qualified_name: str) -> Type:
-    """
-    Dynamically import a class by its qualified name.
-
-    Parameters
-    ----------
-    qualified_name : str
-        The fully qualified class name (e.g., 'timm.models.resnet.BasicBlock').
-
-    Returns
-    -------
-    type
-        The imported class object.
-
-    Raises
-    ------
-    ImportError
-        If the module or class cannot be imported.
-    AttributeError
-        If the class does not exist in the specified module.
-
-    Examples
-    --------
-    >>> BasicBlock = safe_import('timm.models.resnet.BasicBlock')
-    >>> block = BasicBlock(64, 64)
-    """
-    try:
-        # split module and class name
-        parts = qualified_name.split(".")
-        if len(parts) < 2:
-            raise ImportError(f"Invalid qualified name: {qualified_name}")
-
-        # try importing progressively more specific modules
-        for i in range(len(parts) - 1, 0, -1):
-            module_name = ".".join(parts[:i])
-            class_name = ".".join(parts[i:])
-
-            try:
-                module = importlib.import_module(module_name)
-                # navigate to the class through nested attributes
-                obj = module
-                for attr in class_name.split("."):
-                    obj = getattr(obj, attr)
-                return obj
-            except (ImportError, AttributeError):
-                continue
-
-        raise ImportError(f"Could not import {qualified_name}")
-
-    except Exception as e:
-        raise ImportError(f"Failed to import {qualified_name}: {e}")
 
 
 def append_results(path: str, data: Dict[str, Any]) -> None:

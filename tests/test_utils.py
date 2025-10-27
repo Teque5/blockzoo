@@ -8,7 +8,7 @@ from pathlib import Path
 import pandas as pd
 
 from blockzoo.scaffold import BasicBlock
-from blockzoo.utils import append_results, format_bytes, load_results, safe_import
+from blockzoo.utils import append_results, format_bytes, load_results
 
 
 class TestUtils(unittest.TestCase):
@@ -24,21 +24,7 @@ class TestUtils(unittest.TestCase):
         if hasattr(self, "temp_dir") and self.temp_dir.exists():
             shutil.rmtree(self.temp_dir)
 
-    def test_safe_import_valid_class(self):
-        """Test safe_import with valid class."""
-        # import a known class
-        imported_cls = safe_import("blockzoo.scaffold.BasicBlock")
-        self.assertEqual(imported_cls, BasicBlock)
 
-    def test_safe_import_invalid_class(self):
-        """Test safe_import with invalid class."""
-        with self.assertRaises(ImportError):
-            safe_import("nonexistent.module.Class")
-
-    def test_safe_import_builtin(self):
-        """Test safe_import with built-in class."""
-        list_cls = safe_import("builtins.list")
-        self.assertEqual(list_cls, list)
 
     def test_format_bytes(self):
         """Test format_bytes function."""

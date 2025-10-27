@@ -33,10 +33,10 @@ class TestProfiler(unittest.TestCase):
 
     def test_profile_block_in_scaffold(self):
         """Test profile_block_in_scaffold function."""
-        profile = profile_block_in_scaffold("blockzoo.scaffold.BasicBlock", position="mid")
+        profile = profile_block_in_scaffold("BasicBlock", position="mid")
 
         # check that additional metadata is included
-        self.assertEqual(profile["block_class"], "blockzoo.scaffold.BasicBlock")
+        self.assertEqual(profile["block_class"], "BasicBlock")
         self.assertEqual(profile["position"], "mid")
         self.assertEqual(profile["num_blocks"], 3)  # default
 

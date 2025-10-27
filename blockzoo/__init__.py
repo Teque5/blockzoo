@@ -17,7 +17,7 @@ from .scaffold import BasicBlock, ScaffoldNet
 
 # main functions
 from .train import create_model_from_config
-from .utils import append_results, format_bytes, load_results, safe_import
+from .utils import append_results, format_bytes, load_results
 
 __all__ = [
     # core classes
@@ -34,7 +34,7 @@ __all__ = [
     "benchmark_model",
     "benchmark_block_in_scaffold",
     # utilities
-    "safe_import",
+
     "append_results",
     "format_bytes",
     "load_results",

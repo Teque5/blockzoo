@@ -22,7 +22,8 @@ class TestBlockRegistry:
             "EdgeResidual",
             "ResNetBasicBlock",
             "ResNetBottleneck",
-            "SimpleResidualBlock"
+            "SimpleResidualBlock",
+            "BasicBlock"
         }
         assert set(blocks) == expected_blocks
 

@@ -18,7 +18,7 @@ class ExperimentConfig:
     Parameters
     ----------
     block_class : str
-        Fully qualified name of the block class to test.
+        Name of the block in the block registry (e.g., 'InvertedResidual').
     position : str
         Position to place the block ('early', 'mid', 'late').
     dataset : str

@@ -27,7 +27,7 @@ class TestIntegration(unittest.TestCase):
     def test_end_to_end_profiling(self):
         """Test end-to-end profiling workflow."""
         # profile a block
-        profile = profile_block_in_scaffold("blockzoo.scaffold.BasicBlock", position="early")
+        profile = profile_block_in_scaffold("BasicBlock", position="early")
 
         # save results
         append_results(self.temp_csv, profile)
@@ -43,7 +43,7 @@ class TestIntegration(unittest.TestCase):
         positions = ["early", "mid", "late"]
 
         for position in positions:
-            profile = profile_block_in_scaffold("blockzoo.scaffold.BasicBlock", position=position)
+            profile = profile_block_in_scaffold("BasicBlock", position=position)
             profile["test_run"] = f"position_{position}"
             append_results(self.temp_csv, profile)
 

@@ -11,7 +11,6 @@ from typing import Any, Dict, Optional
 import pandas as pd
 
 
-
 def append_results(path: str, data: Dict[str, Any]) -> None:
     """
     Append a row of results to a CSV file, creating directories and headers as needed.

@@ -13,7 +13,6 @@ from pathlib import Path
 from blockzoo.wrappers import list_available_blocks
 
 
-
 def main():
     """Run benchmark on all blocks at all positions."""
     blocks = list_available_blocks()

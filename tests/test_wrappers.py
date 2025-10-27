@@ -7,7 +7,8 @@ and produce the expected output shapes.
 
 import pytest
 import torch
-from blockzoo.wrappers import BLOCK_REGISTRY, list_available_blocks, create_block
+
+from blockzoo.wrappers import BLOCK_REGISTRY, create_block, list_available_blocks
 
 
 class TestBlockRegistry:
@@ -23,7 +24,7 @@ class TestBlockRegistry:
             "ResNetBasicBlock",
             "ResNetBottleneck",
             "SimpleResidualBlock",
-            "BasicBlock"
+            "BasicBlock",
         }
         assert set(blocks) == expected_blocks
 

@@ -75,11 +75,11 @@ class ScaffoldNet(nn.Module):
             nn.ReLU(inplace=True),
         )
 
-        def make_stage(ch_in: int, ch_out: int, stride: int) -> nn.Sequential:
+        def make_stage(in_channels: int, out_channels: int, stride: int) -> nn.Sequential:
             """Create a stage with repeated blocks."""
-            layers = [block_cls(ch_in, ch_out, stride=stride)]
+            layers = [block_cls(in_channels, out_channels, stride=stride)]
             for _ in range(num_blocks - 1):
-                layers.append(block_cls(ch_out, ch_out, stride=1))
+                layers.append(block_cls(out_channels, out_channels, stride=1))
             return nn.Sequential(*layers)
 
         c = base_channels
@@ -88,11 +88,11 @@ class ScaffoldNet(nn.Module):
         stage_c = make_stage(2 * c, 4 * c, stride=2)  # late-stage (low-res)
 
         # create default stages using BasicBlock for non-target positions
-        def make_basic_stage(ch_in: int, ch_out: int, stride: int) -> nn.Sequential:
+        def make_basic_stage(in_channels: int, out_channels: int, stride: int) -> nn.Sequential:
             """Create a stage with repeated BasicBlocks."""
-            layers = [BasicBlock(ch_in, ch_out, stride=stride)]
+            layers = [BasicBlock(in_channels, out_channels, stride=stride)]
             for _ in range(num_blocks - 1):
-                layers.append(BasicBlock(ch_out, ch_out, stride=1))
+                layers.append(BasicBlock(out_channels, out_channels, stride=1))
             return nn.Sequential(*layers)
 
         # set stages based on position with proper channel handling

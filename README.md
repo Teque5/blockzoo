@@ -1,6 +1,6 @@
-# 🧩 BlockZoo — Convolutional Block Benchmarking Framework
+# BlockZoo: Convolutional Block Benchmarking Framework
 
-> **Purpose:** Benchmark and profile convolutional building blocks in isolation, measuring how their **positional specialization** (early/mid/late) affects feature extraction capability, with FLOPs/params/memory/runtime recorded.
+Given the demise of benchmarks from paperswithcode and the ongoing need to evaluate convolutional building blocks, BlockZoo provides a standardized framework to benchmark and profile these blocks in isolation. By embedding blocks into a fixed scaffold architecture at different positions (early, mid, late), we can measure their specialization and performance across key metrics.
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.2+-ee4c2c.svg)](https://pytorch.org/)
@@ -37,10 +37,10 @@ pip install torch>=2.2 torchvision lightning>=2.0 timm torchinfo fvcore ptflops 
 
 ```bash
 # Profile a ResNet BasicBlock in mid position
-python -m blockzoo.profiler timm.models.resnet.BasicBlock --position mid
+python -m blockzoo.profiler ResNetBasicBlock --position mid
 
 # Output:
-# [BlockZoo] Profile for timm.models.resnet.BasicBlock (position=mid):
+# [BlockZoo] Profile for ResNetBasicBlock (position=mid):
 #   Parameters (total):     74,058
 #   Parameters (trainable): 74,058
 #   FLOPs:                  29,490,176
@@ -50,21 +50,39 @@ python -m blockzoo.profiler timm.models.resnet.BasicBlock --position mid
 #### 2. Benchmark Runtime Performance
 
 ```bash
-# Benchmark latency and throughput
-python -m blockzoo.benchmark timm.models.resnet.BasicBlock --position mid --device cuda
+```bash
+python -m blockzoo.benchmark ResNetBasicBlock --position mid --device cuda
 
 # Output:
-# [BlockZoo] Benchmark results for timm.models.resnet.BasicBlock (position=mid):
-#   Device:                 cuda
-#   Mean latency:          1.234 ± 0.051 ms
-#   Throughput:            810.23 images/second
+# [BlockZoo] Benchmark results for ResNetBasicBlock (position=mid):
+#   Forward pass: 1.234 ms (avg over 1000 runs)
+#   Backward pass: 2.345 ms (avg over 1000 runs)
+#   GPU memory: 45.6 MB
+```
 ```
 
 #### 3. Full Training & Evaluation
 
 ```bash
 # Train and evaluate across all aspects
-python -m blockzoo.train timm.models.resnet.BasicBlock --position mid --epochs 5 --benchmark
+```bash
+python -m blockzoo.train ResNetBasicBlock --position mid --epochs 5 --benchmark
+```
+
+This command will:
+1. ✅ **Train** the model for 5 epochs
+2. ✅ **Profile** the block (FLOPs, params, memory)
+3. ✅ **Benchmark** runtime performance
+4. ✅ **Save** results to `results.csv`
+
+### Running Comparisons
+
+Test the same block in different positions:
+
+```bash
+python -m blockzoo.train ResNetBasicBlock --position early --epochs 10
+python -m blockzoo.train ResNetBasicBlock --position mid --epochs 10
+python -m blockzoo.train ResNetBasicBlock --position late --epochs 10
 
 # This will:
 # - Profile the model (FLOPs, params, memory)
@@ -82,9 +100,9 @@ The core innovation of BlockZoo is measuring how blocks perform across different
 
 1. **Fixed Scaffold**: Use ScaffoldNet with identical stem/head across all experiments
 2. **Three Canonical Positions**:
-   - **Early** (Stage A): High resolution, small receptive field
-   - **Mid** (Stage B): Medium resolution with 2x downsampling
-   - **Late** (Stage C): Low resolution with 4x downsampling
+   - **Early** (Stage A): High resolution, small receptive field - focuses on local context (edges, textures)
+   - **Mid** (Stage B): Medium resolution with 2x downsampling - balances local and global context
+   - **Late** (Stage C): Low resolution with 4x downsampling - emphasizes global context (objects, scenes)
 3. **Isolation Testing**: Only one stage active per experiment
 4. **Consistent Training**: Same optimizer, schedule, and data across positions
 
@@ -92,9 +110,9 @@ The core innovation of BlockZoo is measuring how blocks perform across different
 
 ```bash
 # Test ResNet BasicBlock across all positions
-python -m blockzoo.train timm.models.resnet.BasicBlock --position early --epochs 10
-python -m blockzoo.train timm.models.resnet.BasicBlock --position mid --epochs 10
-python -m blockzoo.train timm.models.resnet.BasicBlock --position late --epochs 10
+python -m blockzoo.train ResNetBasicBlock --position early --epochs 10
+python -m blockzoo.train ResNetBasicBlock --position mid --epochs 10
+python -m blockzoo.train ResNetBasicBlock --position late --epochs 10
 
 # Analyze results
 python -c "
@@ -177,12 +195,12 @@ python -m blockzoo.benchmark <block_class> [options]
 import blockzoo
 
 # Quick profiling
-profile = blockzoo.quick_profile('timm.models.resnet.BasicBlock', position='mid')
+profile = blockzoo.quick_profile('ResNetBasicBlock', position='mid')
 print(f"Parameters: {profile['params_total']:,}")
 print(f"FLOPs: {profile['flops']:,}")
 
 # Quick benchmarking
-benchmark = blockzoo.quick_benchmark('timm.models.resnet.BasicBlock', position='mid')
+benchmark = blockzoo.quick_benchmark('ResNetBasicBlock', position='mid')
 print(f"Latency: {benchmark['latency_ms']:.2f} ms")
 print(f"Throughput: {benchmark['throughput']:.1f} img/s")
 ```
@@ -192,10 +210,10 @@ print(f"Throughput: {benchmark['throughput']:.1f} img/s")
 ```python
 import torch
 from blockzoo import ScaffoldNet, ExperimentConfig, get_model_profile
-from blockzoo.utils import safe_import
+from blockzoo.wrappers import get_block_class
 
 # Import and create a custom block
-BlockClass = safe_import('timm.models.resnet.BasicBlock')
+BlockClass = get_block_class('ResNetBasicBlock')
 model = ScaffoldNet(BlockClass, position='early', num_blocks=4)
 
 # Profile the model
@@ -204,7 +222,7 @@ print(f"Model has {profile['params_total']:,} parameters")
 
 # Create experiment configuration
 config = ExperimentConfig(
-    block_class='timm.models.resnet.BasicBlock',
+    block_class='ResNetBasicBlock',
     position='late',
     dataset='cifar100',
     epochs=20,
@@ -367,12 +385,20 @@ def __init__(self, in_channels: int, out_channels: int, stride: int = 1):
     """
 ```
 
-**Compatible Block Types:**
-- ResNet blocks (`timm.models.resnet.BasicBlock`, `Bottleneck`)
-- DenseNet blocks (`timm.models.densenet.DenseLayer`)
-- EfficientNet blocks (`timm.models.efficientnet.InvertedResidual`)
-- RegNet blocks (`timm.models.regnet.RegStage`)
-- Custom blocks following the interface
+**Available Block Types:**
+
+All blocks are defined in the BlockZoo registry and follow the unified (in_channels, out_channels, stride) interface:
+
+- **ResNet blocks**: `ResNetBasicBlock`, `ResNetBottleneck`
+- **EfficientNet blocks**: `InvertedResidual`, `UniversalInvertedResidual`, `EdgeResidual`
+- **Simple fallback blocks**: `SimpleResidualBlock`
+- **Basic BlockZoo blocks**: `BasicBlock`
+
+To see all available blocks:
+```python
+from blockzoo.wrappers import list_available_blocks
+print("Available blocks:", list_available_blocks())
+```
 
 ## 🧪 Testing
 
@@ -397,10 +423,10 @@ python -m pytest tests/ --cov=blockzoo --cov-report=html
 
 ```bash
 # ResNet BasicBlock
-python -m blockzoo.train timm.models.resnet.BasicBlock --position mid --epochs 10 --experiment-name "resnet-basic"
+python -m blockzoo.train ResNetBasicBlock --position mid --epochs 10 --experiment-name "resnet-basic"
 
-# DenseNet Layer
-python -m blockzoo.train timm.models.densenet.DenseLayer --position mid --epochs 10 --experiment-name "densenet-layer"
+# Simple Residual Block
+python -m blockzoo.train SimpleResidualBlock --position mid --epochs 10 --experiment-name "simple-residual"
 
 # Compare results
 python -c "
@@ -417,7 +443,7 @@ print(comparison)
 #!/bin/bash
 # Test EfficientNet block across positions
 
-BLOCK="timm.models.efficientnet.InvertedResidual"
+BLOCK="InvertedResidual"
 
 for pos in early mid late; do
     echo "Testing position: $pos"
@@ -436,7 +462,7 @@ echo "Analysis complete. Check results/results.csv"
 
 ```bash
 # Test how performance scales with batch size
-python -m blockzoo.benchmark timm.models.resnet.BasicBlock \
+python -m blockzoo.benchmark ResNetBasicBlock \
     --position mid \
     --multi-batch 1 2 4 8 16 32 \
     --device cuda \
@@ -470,7 +496,12 @@ def get_custom_dataset_config(dataset_name: str):
             "mean": [0.5, 0.5, 0.5],
             "std": [0.25, 0.25, 0.25]
         }
-    # ... add more custom datasets
+        # ... add more custom datasets
+```
+
+# Run tests
+python -m pytest tests/ -v --cov=blockzoo
+```
 ```
 
 ## 🚨 Troubleshooting
@@ -491,8 +522,8 @@ python -m blockzoo.train <block> --device cpu
 # Install missing dependencies
 pip install timm torchinfo fvcore
 
-# Check block name spelling
-python -c "from blockzoo.utils import safe_import; safe_import('your.block.name')"
+# Check available block names
+python -c "from blockzoo.wrappers import list_available_blocks; print('Available blocks:', list_available_blocks())"
 ```
 
 **3. Lightning Warnings**
@@ -501,13 +532,6 @@ python -c "from blockzoo.utils import safe_import; safe_import('your.block.name'
 import warnings
 warnings.filterwarnings("ignore", ".*dataloader.*")
 ```
-
-### Performance Tips
-
-- **Use CUDA**: 5-10x speedup for training and benchmarking
-- **Batch Size**: Start with 32, increase until memory limit
-- **Workers**: Set `num_workers=4` for faster data loading
-- **Mixed Precision**: Add `--precision 16` for Lightning speedup
 
 ## 🤝 Contributing
 
@@ -536,19 +560,10 @@ pre-commit install
 python -m pytest tests/ -v --cov=blockzoo
 ```
 
-## 📜 License
+---
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- **PyTorch Lightning** for the robust training framework
-- **timm** for the comprehensive model library
-- **fvcore** and **torchinfo** for profiling utilities
-- The broader **PyTorch** ecosystem for making this possible
+*For questions, issues, or feature requests, please open an issue on GitHub.*
 
 ---
 
 **Happy benchmarking! 🧩⚡**
-
-*For questions, issues, or feature requests, please open an issue on GitHub.*

@@ -34,7 +34,6 @@ __all__ = [
     "benchmark_model",
     "benchmark_block_in_scaffold",
     # utilities
-
     "append_results",
     "format_bytes",
     "load_results",

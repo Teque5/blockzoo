@@ -24,8 +24,6 @@ class TestUtils(unittest.TestCase):
         if hasattr(self, "temp_dir") and self.temp_dir.exists():
             shutil.rmtree(self.temp_dir)
 
-
-
     def test_format_bytes(self):
         """Test format_bytes function."""
         test_cases = [

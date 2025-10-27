@@ -9,11 +9,11 @@ The lookup table maps block names to wrapper functions that return properly conf
 from functools import partial
 from typing import Any, Callable, Dict
 
-from torch import nn
-
 # import timm blocks
-from timm.models._efficientnet_blocks import InvertedResidual, UniversalInvertedResidual, EdgeResidual
-from timm.models.resnet import BasicBlock as TimmBasicBlock, Bottleneck
+from timm.models._efficientnet_blocks import EdgeResidual, InvertedResidual, UniversalInvertedResidual
+from timm.models.resnet import BasicBlock as TimmBasicBlock
+from timm.models.resnet import Bottleneck
+from torch import nn
 
 # import blockzoo blocks
 from .scaffold import BasicBlock as BlockZooBasicBlock
@@ -57,12 +57,7 @@ class InvertedResidualWrapper(nn.Module):
 
     def __init__(self, in_channels: int, out_channels: int, stride: int = 1):
         super().__init__()
-        self.block = InvertedResidual(
-            in_chs=in_channels,
-            out_chs=out_channels,
-            stride=stride,
-            exp_ratio=6.0  # standard MobileNet expansion ratio
-        )
+        self.block = InvertedResidual(in_chs=in_channels, out_chs=out_channels, stride=stride, exp_ratio=6.0)  # standard MobileNet expansion ratio
 
     def forward(self, x):
         return self.block(x)
@@ -73,12 +68,7 @@ class UniversalInvertedResidualWrapper(nn.Module):
 
     def __init__(self, in_channels: int, out_channels: int, stride: int = 1):
         super().__init__()
-        self.block = UniversalInvertedResidual(
-            in_chs=in_channels,
-            out_chs=out_channels,
-            stride=stride,
-            exp_ratio=4.0  # standard expansion ratio for UIB
-        )
+        self.block = UniversalInvertedResidual(in_chs=in_channels, out_chs=out_channels, stride=stride, exp_ratio=4.0)  # standard expansion ratio for UIB
 
     def forward(self, x):
         return self.block(x)
@@ -89,12 +79,7 @@ class EdgeResidualWrapper(nn.Module):
 
     def __init__(self, in_channels: int, out_channels: int, stride: int = 1):
         super().__init__()
-        self.block = EdgeResidual(
-            in_chs=in_channels,
-            out_chs=out_channels,
-            stride=stride,
-            exp_ratio=6.0  # standard expansion ratio
-        )
+        self.block = EdgeResidual(in_chs=in_channels, out_chs=out_channels, stride=stride, exp_ratio=6.0)  # standard expansion ratio
 
     def forward(self, x):
         return self.block(x)
@@ -108,12 +93,7 @@ class ResNetBasicBlockWrapper(nn.Module):
         # create downsample if needed
         downsample = create_downsample_if_needed(in_channels, out_channels, stride)
 
-        self.block = TimmBasicBlock(
-            inplanes=in_channels,
-            planes=out_channels,
-            stride=stride,
-            downsample=downsample
-        )
+        self.block = TimmBasicBlock(inplanes=in_channels, planes=out_channels, stride=stride, downsample=downsample)
 
     def forward(self, x):
         return self.block(x)
@@ -133,17 +113,10 @@ class ResNetBottleneckWrapper(nn.Module):
         # create downsample if needed
         downsample = create_downsample_if_needed(in_channels, out_channels, stride)
 
-        self.block = Bottleneck(
-            inplanes=in_channels,
-            planes=planes,
-            stride=stride,
-            downsample=downsample
-        )
+        self.block = Bottleneck(inplanes=in_channels, planes=planes, stride=stride, downsample=downsample)
 
     def forward(self, x):
         return self.block(x)
-
-
 
 
 # block lookup table - maps block names to their wrapper classes
@@ -157,7 +130,6 @@ BLOCK_REGISTRY: Dict[str, Callable[[int, int, int], nn.Module]] = {
     "ResNetBottleneck": ResNetBottleneckWrapper,
     # custom simple blocks (fallbacks)
     "SimpleResidualBlock": SimpleResidualBlock,
-
     # blockzoo basic block (for tests and simple cases)
     "BasicBlock": BlockZooBasicBlock,
 }

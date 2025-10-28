@@ -88,7 +88,7 @@ class BlockZooLightningModule(L.LightningModule):
         return {"optimizer": optimizer, "lr_scheduler": scheduler, "monitor": "val_loss"}
 
 
-def create_data_loaders(dataset_name: str, batch_size: int, num_workers: int = 2) -> Tuple[DataLoader, DataLoader]:
+def create_data_loaders(dataset_name: str, batch_size: int, num_workers: int = 8) -> Tuple[DataLoader, DataLoader]:
     """
     Create train and validation data loaders.
 
@@ -99,7 +99,7 @@ def create_data_loaders(dataset_name: str, batch_size: int, num_workers: int = 2
     batch_size : int
         Batch size for data loaders.
     num_workers : int, optional
-        Number of workers for data loading. Default is 2.
+        Number of workers for data loading.
 
     Returns
     -------
@@ -225,6 +225,8 @@ def run_training(config: ExperimentConfig) -> Dict[str, Any]:
     # set accelerator
     if config.device == "cuda" and torch.cuda.is_available():
         trainer_kwargs.update({"accelerator": "gpu", "devices": 1})
+        # set tensor core precision if available
+        torch.set_float32_matmul_precision("high")
     else:
         trainer_kwargs.update({"accelerator": "cpu"})
 
@@ -293,9 +295,6 @@ def run_benchmark_if_requested(model: nn.Module, config: ExperimentConfig) -> Op
     dict or None
         Benchmark results if benchmarking was requested, None otherwise.
     """
-    if not config.benchmark:
-        return None
-
     print(f"\n[BlockZoo] Running benchmark...")
 
     benchmark_results = benchmark_model(
@@ -318,45 +317,6 @@ def main() -> None:
         # parse configuration
         config = parse_train_args()
         validate_config(config)
-
-        # profile-only mode
-        if config.profile_only:
-            print(f"[BlockZoo] Profile-only mode")
-            model = create_model_from_config(config)
-            profile_results = get_model_profile(model, config.input_shape, config.device)
-            print_profile(profile_results, f"{config.block_class} (position={config.position})")
-
-            # optionally save profile results using consistent schema
-            if config.output_file:
-                profile_data = {
-                    "timestamp": datetime.now().isoformat(),
-                    "block": config.block_class,
-                    "dataset": config.dataset,
-                    "position": config.position,
-                    "epochs": None,
-                    "batch_size": None,
-                    "lr": None,
-                    "val_loss": None,
-                    "val_acc": None,
-                    "training_time": None,
-                    "params_total": profile_results["params_total"],
-                    "params_trainable": profile_results["params_trainable"],
-                    "flops": profile_results["flops"],
-                    "memory_mb": profile_results["memory_mb"],
-                    "latency_ms": None,
-                    "latency_std": None,
-                    "throughput": None,
-                    "device": config.device,
-                    "num_blocks": config.num_blocks,
-                    "base_channels": config.base_channels,
-                    "out_dim": config.out_dim,
-                    "experiment_name": config.experiment_name or "",
-                    "notes": f"profile_only=True,{config.notes or ''}",
-                }
-                append_results(config.output_file, profile_data)
-                print(f"\n[BlockZoo] Profile results saved to {config.output_file}")
-
-            return
 
         # full training pipeline
         results, trained_model = run_training(config)

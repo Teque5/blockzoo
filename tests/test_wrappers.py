@@ -21,7 +21,7 @@ class TestBlockRegistry:
         stride = 1
 
         # create block
-        block = create_block(block_name, in_channels, out_channels, stride)
+        block = create_block(block_name, in_channels, out_channels, stride, position="mid")
 
         # test forward pass
         x = torch.randn(2, in_channels, 32, 32)
@@ -39,7 +39,7 @@ class TestBlockRegistry:
         stride = 2
 
         # create block
-        block = create_block(block_name, in_channels, out_channels, stride)
+        block = create_block(block_name, in_channels, out_channels, stride, position="mid")
 
         # test forward pass
         x = torch.randn(2, in_channels, 32, 32)
@@ -57,7 +57,7 @@ class TestBlockRegistry:
         stride = 1
 
         # create block
-        block = create_block(block_name, in_channels, out_channels, stride)
+        block = create_block(block_name, in_channels, out_channels, stride, position="late")
 
         # test forward pass
         x = torch.randn(1, in_channels, 16, 16)
@@ -70,17 +70,4 @@ class TestBlockRegistry:
 
 
 if __name__ == "__main__":
-    # quick test to run manually
-    print("Testing all blocks in BLOCK_REGISTRY...")
-
-    for block_name in BLOCK_REGISTRY.keys():
-        try:
-            # test basic functionality
-            block = create_block(block_name, 64, 128, stride=2)
-            x = torch.randn(1, 64, 16, 16)
-            y = block(x)
-            print(f"✅ {block_name}: {y.shape}")
-        except Exception as e:
-            print(f"❌ {block_name}: {e}")
-
-    print("Done!")
+    unittest.main()

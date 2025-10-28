@@ -5,6 +5,7 @@ plots for analyzing block performance across different positions.
 """
 
 import argparse
+import datetime
 import sys
 from pathlib import Path
 from typing import Optional, Tuple
@@ -53,19 +54,25 @@ def load_results(csv_path: str) -> pd.DataFrame:
     return df
 
 
-def get_position_styles():
-    """Get consistent position styling."""
+def get_position_sizes():
+    """Get consistent position sizing for markers."""
     return {
-        "early": {"marker": "o", "linestyle": "-", "markersize": 8},
-        "mid": {"marker": "s", "linestyle": "--", "markersize": 8},
-        "late": {"marker": "^", "linestyle": "-.", "markersize": 8},
+        "early": 6,  # small
+        "mid": 10,  # medium
+        "late": 14,  # large
     }
 
 
-def get_block_colors(blocks):
-    """Get consistent color mapping for blocks."""
+def get_block_styles(blocks):
+    """Get consistent marker styles for blocks."""
+    # Different marker shapes for different blocks
+    markers = ["o", "s", "^", "D", "v", "<", ">", "p", "*", "h", "H", "+", "x"]
     colors = plt.cm.tab10(range(len(blocks)))
-    return dict(zip(blocks, colors))
+
+    styles = {}
+    for i, block in enumerate(blocks):
+        styles[block] = {"marker": markers[i % len(markers)], "color": colors[i]}
+    return styles
 
 
 def create_scatter_plot(df: pd.DataFrame, x_col: str, y_col: str, x_label: str, y_label: str, title: str, output_path: str) -> None:
@@ -102,13 +109,14 @@ def create_scatter_plot(df: pd.DataFrame, x_col: str, y_col: str, x_label: str, 
         print(f"Warning: No valid data for {x_col} vs {y_col} plot")
         return
 
-    position_styles = get_position_styles()
+    position_sizes = get_position_sizes()
     blocks = plot_df["block"].unique()
-    block_colors = get_block_colors(blocks)
+    block_styles = get_block_styles(blocks)
 
     # Create scatter plot for each block-position combination
     for block in blocks:
         block_data = plot_df[plot_df["block"] == block]
+        block_style = block_styles[block]
 
         for position in ["early", "mid", "late"]:
             pos_data = block_data[block_data["position"] == position]
@@ -116,16 +124,15 @@ def create_scatter_plot(df: pd.DataFrame, x_col: str, y_col: str, x_label: str, 
             if len(pos_data) == 0:
                 continue
 
-            style = position_styles[position]
-            color = block_colors[block]
+            markersize = position_sizes[position]
 
             # Plot points
             ax.scatter(
                 pos_data[x_col],
                 pos_data[y_col],
-                color=color,
-                marker=style["marker"],
-                s=style["markersize"] ** 2,
+                color=block_style["color"],
+                marker=block_style["marker"],
+                s=markersize**2,
                 alpha=0.8,
                 edgecolors="black",
                 linewidth=0.5,
@@ -135,6 +142,7 @@ def create_scatter_plot(df: pd.DataFrame, x_col: str, y_col: str, x_label: str, 
     # Connect points for the same block across positions with lines
     for block in blocks:
         block_data = plot_df[plot_df["block"] == block]
+        block_style = block_styles[block]
 
         # Group by position and get mean values for line plotting
         pos_means = block_data.groupby("position").agg({x_col: "mean", y_col: "mean"}).reindex(["early", "mid", "late"])
@@ -142,10 +150,10 @@ def create_scatter_plot(df: pd.DataFrame, x_col: str, y_col: str, x_label: str, 
         # Only plot line if we have data for multiple positions
         valid_positions = pos_means.dropna()
         if len(valid_positions) >= 2:
-            ax.plot(valid_positions[x_col], valid_positions[y_col], color=block_colors[block], alpha=0.6, linewidth=2, linestyle="-")
+            ax.plot(valid_positions[x_col], valid_positions[y_col], color=block_style["color"], alpha=0.6, linewidth=2, linestyle="-")
 
     # Customize the plot
-    ax.set_ylim(0.7, 1)
+    ax.set_ylim(0.5, 0.95)
     ax.set_xlabel(x_label, fontsize=12, fontweight="bold")
     ax.set_ylabel(y_label, fontsize=12, fontweight="bold")
     ax.set_title(title, fontsize=14, fontweight="bold", pad=20)
@@ -156,13 +164,13 @@ def create_scatter_plot(df: pd.DataFrame, x_col: str, y_col: str, x_label: str, 
     # Create compact combined legend
     legend_elements = []
 
-    # Position markers section
-    for pos, style in position_styles.items():
-        legend_elements.append(plt.Line2D([0], [0], marker=style["marker"], color="black", linestyle="None", markersize=8, label=f"{pos.title()} Position"))
+    # Position size section
+    for pos, size in position_sizes.items():
+        legend_elements.append(plt.Line2D([0], [0], marker="o", color="gray", linestyle="None", markersize=size, label=f"{pos.title()} Position"))
 
-    # Block colors section
-    for block, color in block_colors.items():
-        legend_elements.append(plt.Line2D([0], [0], marker="o", color=color, linestyle="None", markersize=8, label=block))
+    # Block marker shapes section
+    for block, style in block_styles.items():
+        legend_elements.append(plt.Line2D([0], [0], marker=style["marker"], color=style["color"], linestyle="None", markersize=8, label=block))
 
     # Create single legend with two columns
     legend = ax.legend(
@@ -190,20 +198,19 @@ def create_all_plots(df: pd.DataFrame, output_dir: str = ".") -> None:
     """
     output_path = Path(output_dir)
     output_path.mkdir(exist_ok=True)
-
+    today = datetime.date.today().isoformat()
     # Plot configurations: (column, label, filename)
     plot_configs = [
-        # ("throughput", "Throughput (images/second)", "accuracy_vs_throughput.png"),
-        ("params_total", "Total Parameters", "accuracy_vs_params.png"),
-        ("memory_mb", "Memory Usage (MB)", "accuracy_vs_memory.png"),
-        ("latency_ms", "Latency (ms)", "accuracy_vs_latency.png"),
+        ("flops", "FLOPs (Floating Point Operations)", f"{today}_accuracy-vs-flops.png"),
+        ("latency_ms", "Inference Latency (ms)", f"{today}_accuracy-vs-latency.png"),
+        ("memory_mb", "Memory Usage (MB)", f"{today}_accuracy-vs-memory.png"),
     ]
 
     for x_col, x_label, filename in plot_configs:
-        title = f"Block Performance: Accuracy vs {x_label.split('(')[0].strip()}"
+        title = f"BlockZoo: Accuracy vs {x_label.split('(')[0].strip()}"
         output_file = output_path / filename
 
-        create_scatter_plot(df=df, x_col=x_col, y_col="val_acc", x_label=x_label, y_label="Validation Accuracy", title=title, output_path=str(output_file))
+        create_scatter_plot(df=df, x_col=x_col, y_col="val_acc", x_label=x_label, y_label="CIFAR10 Accuracy", title=title, output_path=str(output_file))
 
 
 def main():
@@ -224,12 +231,6 @@ def main():
         # Create all plots
         print("Generating visualization plots...")
         create_all_plots(df, args.output_dir)
-
-        print("\nGenerated plots:")
-        print("  • accuracy_vs_throughput.png - Accuracy vs Throughput")
-        print("  • accuracy_vs_params.png - Accuracy vs Parameters")
-        print("  • accuracy_vs_memory.png - Accuracy vs Memory Usage")
-        print("  • accuracy_vs_latency.png - Accuracy vs Latency")
 
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)

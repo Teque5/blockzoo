@@ -69,29 +69,29 @@ class ScaffoldNet(nn.Module):
             nn.ReLU(inplace=True),
         )
 
-        def _make_stage(in_channels: int, out_channels: int, stride: int) -> nn.Sequential:
+        def _make_stage(in_channels: int, out_channels: int, stride: int, stage_position: str) -> nn.Sequential:
             """Create a stage with repeated blocks."""
-            layers = [block_cls(in_channels, out_channels, stride=stride)]
+            layers = [block_cls(in_channels, out_channels, stride=stride, position=stage_position)]
             for _ in range(num_blocks - 1):
-                layers.append(block_cls(out_channels, out_channels, stride=1))
+                layers.append(block_cls(out_channels, out_channels, stride=1, position=stage_position))
             return nn.Sequential(*layers)
 
         # set stages based on position with proper channel handling
         if position == "early":
             # target_block in stage 1 (local features)
-            self.stage1 = self._make_stage(block_cls, self.channels[0], self.channels[1], 1)
-            self.stage2 = self._make_stage(ResNetBasicBlockWrapper, self.channels[1], self.channels[2], 2)
-            self.stage3 = self._make_stage(ResNetBasicBlockWrapper, self.channels[2], self.channels[3], 2)
+            self.stage1 = self._make_stage(block_cls, self.channels[0], self.channels[1], 1, "early")
+            self.stage2 = self._make_stage(ResNetBasicBlockWrapper, self.channels[1], self.channels[2], 2, "mid")
+            self.stage3 = self._make_stage(ResNetBasicBlockWrapper, self.channels[2], self.channels[3], 2, "late")
         elif position == "mid":
             # target_block in stage 2 (mid-level features)
-            self.stage1 = self._make_stage(ResNetBasicBlockWrapper, self.channels[0], self.channels[1], 1)
-            self.stage2 = self._make_stage(block_cls, self.channels[1], self.channels[2], 2)
-            self.stage3 = self._make_stage(ResNetBasicBlockWrapper, self.channels[2], self.channels[3], 2)
+            self.stage1 = self._make_stage(ResNetBasicBlockWrapper, self.channels[0], self.channels[1], 1, "early")
+            self.stage2 = self._make_stage(block_cls, self.channels[1], self.channels[2], 2, "mid")
+            self.stage3 = self._make_stage(ResNetBasicBlockWrapper, self.channels[2], self.channels[3], 2, "late")
         else:
             # target_block in stage 3 (global features)
-            self.stage1 = self._make_stage(ResNetBasicBlockWrapper, self.channels[0], self.channels[1], 1)
-            self.stage2 = self._make_stage(ResNetBasicBlockWrapper, self.channels[1], self.channels[2], 2)
-            self.stage3 = self._make_stage(block_cls, self.channels[2], self.channels[3], 2)
+            self.stage1 = self._make_stage(ResNetBasicBlockWrapper, self.channels[0], self.channels[1], 1, "early")
+            self.stage2 = self._make_stage(ResNetBasicBlockWrapper, self.channels[1], self.channels[2], 2, "mid")
+            self.stage3 = self._make_stage(block_cls, self.channels[2], self.channels[3], 2, "late")
 
         self.head = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
@@ -99,11 +99,11 @@ class ScaffoldNet(nn.Module):
             nn.Linear(self.channels[3], out_dim),
         )
 
-    def _make_stage(self, block_cls: Type[nn.Module], in_channels: int, out_channels: int, stride: int) -> nn.Sequential:
+    def _make_stage(self, block_cls: Type[nn.Module], in_channels: int, out_channels: int, stride: int, stage_position: str) -> nn.Sequential:
         """Create a stage with repeated blocks."""
-        layers = [block_cls(in_channels, out_channels, stride=stride)]
+        layers = [block_cls(in_channels, out_channels, stride=stride, position=stage_position)]
         for _ in range(self.num_blocks - 1):
-            layers.append(block_cls(out_channels, out_channels, stride=1))
+            layers.append(block_cls(out_channels, out_channels, stride=1, position=stage_position))
         return nn.Sequential(*layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

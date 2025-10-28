@@ -9,6 +9,7 @@ import sys
 from typing import Any, Dict, Tuple
 
 import torch
+from timm.utils.model import reparameterize_model
 from torch import nn
 from torchinfo import summary
 
@@ -72,6 +73,8 @@ def get_model_profile(model: nn.Module, input_shape: Tuple[int, int, int, int] =
     >>> profile['params_total']
     4505866
     """
+    # reparameterize model if supported
+    model = reparameterize_model(model)
     model = model.to(device)
     model.eval()
 
@@ -166,7 +169,7 @@ def main() -> None:
     """CLI entrypoint for blockzoo-profile command."""
     parser = argparse.ArgumentParser(description="Profile a convolutional block wrapped in ScaffoldNet", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument("block", help="Fully qualified name of the block class (e.g., 'timm.models.resnet.BasicBlock')")
+    parser.add_argument("block", help="Block Name (e.g., 'ResNetBasicBlock')")
     parser.add_argument("--position", choices=["early", "mid", "late"], default="mid", help="Position to place the block in scaffold")
     parser.add_argument(
         "--input-shape",
@@ -190,7 +193,7 @@ def main() -> None:
     try:
         # profile the block
         profile = profile_block_in_scaffold(
-            block_qualified_name=args.block, position=args.position, input_shape=tuple(args.input_shape), device=args.device, num_blocks=args.num_blocks
+            block_name=args.block, position=args.position, input_shape=tuple(args.input_shape), device=args.device, num_blocks=args.num_blocks
         )
 
         # print results

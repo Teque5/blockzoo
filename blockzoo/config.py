@@ -42,10 +42,6 @@ class ExperimentConfig:
         Base number of channels for the scaffold.
     out_dim : int
         Output dimension (number of classes).
-    profile_only : bool
-        If True, only profile the model without training.
-    benchmark : bool
-        If True, run benchmarking after training.
     output_file : str
         Path to CSV file for saving results.
     """
@@ -59,7 +55,7 @@ class ExperimentConfig:
 
     # training configuration
     dataset: str = "cifar10"
-    epochs: int = 10
+    epochs: int = 25
     batch_size: int = 256
     learning_rate: float = 0.001
 
@@ -68,8 +64,6 @@ class ExperimentConfig:
     input_shape: Tuple[int, int, int, int] = (1, 3, 32, 32)
 
     # experiment configuration
-    profile_only: bool = False
-    benchmark: bool = False
     output_file: str = "results/results.csv"
 
     # optional metadata
@@ -110,8 +104,6 @@ class ExperimentConfig:
             "num_blocks": self.num_blocks,
             "base_channels": self.base_channels,
             "out_dim": self.out_dim,
-            "profile_only": self.profile_only,
-            "benchmark": self.benchmark,
             "output_file": self.output_file,
             "experiment_name": self.experiment_name,
             "notes": self.notes,
@@ -161,7 +153,7 @@ def create_train_parser() -> argparse.ArgumentParser:
 
     # training configuration
     parser.add_argument("--dataset", choices=["cifar10", "cifar100", "imagenet"], default="cifar10", help="Dataset to use for training")
-    parser.add_argument("--epochs", type=int, default=10, help="Number of training epochs")
+    parser.add_argument("--epochs", type=int, default=25, help="Number of training epochs")
     parser.add_argument("--batch-size", type=int, default=256, help="Batch size for training")
     parser.add_argument("--lr", "--learning-rate", type=float, default=0.001, dest="learning_rate", help="Learning rate for optimizer")
 
@@ -175,10 +167,6 @@ def create_train_parser() -> argparse.ArgumentParser:
         metavar=("B", "C", "H", "W"),
         help="Input tensor shape (batch_size, channels, height, width)",
     )
-
-    # experiment modes
-    parser.add_argument("--profile-only", action="store_true", help="Only profile the model without training")
-    parser.add_argument("--benchmark", action="store_true", help="Run benchmarking after training")
 
     # output configuration
     parser.add_argument("--output", default="results/results.csv", help="CSV file to save results")
@@ -234,8 +222,6 @@ def parse_train_args(args: Optional[List[str]] = None) -> ExperimentConfig:
         learning_rate=parsed_args.learning_rate,
         device=device,
         input_shape=tuple(parsed_args.input_shape),
-        profile_only=parsed_args.profile_only,
-        benchmark=parsed_args.benchmark,
         output_file=parsed_args.output,
         experiment_name=parsed_args.experiment_name,
         notes=parsed_args.notes,

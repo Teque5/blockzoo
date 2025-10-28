@@ -8,7 +8,7 @@ import argparse
 import logging
 import sys
 import time
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Tuple
 
 import numpy as np
 import torch
@@ -229,60 +229,6 @@ def benchmark_block_in_scaffold(
     return results
 
 
-def benchmark_multiple_batch_sizes(
-    model: nn.Module,
-    batch_sizes: List[int],
-    input_shape: Tuple[int, int, int, int] = (1, 3, 32, 32),
-    device: str = "cpu",
-    warmup_runs: int = 5,
-    benchmark_runs: int = 50,
-) -> Dict[int, Dict[str, Any]]:
-    """
-    Benchmark a model across multiple batch sizes.
-
-    Parameters
-    ----------
-    model : torch.nn.Module
-        The model to benchmark.
-    batch_sizes : list of int
-        List of batch sizes to test.
-    input_shape : tuple of int, optional
-        Base input shape (batch_size will be overridden). Default is (1, 3, 32, 32).
-    device : str, optional
-        Device to run benchmark on. Default is 'cpu'.
-    warmup_runs : int, optional
-        Number of warmup runs per batch size. Default is 5.
-    benchmark_runs : int, optional
-        Number of benchmark runs per batch size. Default is 50.
-
-    Returns
-    -------
-    dict
-        Dictionary mapping batch sizes to their benchmark results.
-    """
-    results = {}
-
-    for batch_size in batch_sizes:
-        print(f"\n[BlockZoo] Benchmarking batch size {batch_size}...")
-
-        try:
-            batch_results = benchmark_model(
-                model=model, input_shape=input_shape, device=device, batch_size=batch_size, warmup_runs=warmup_runs, benchmark_runs=benchmark_runs
-            )
-            results[batch_size] = batch_results
-
-        except RuntimeError as e:
-            if "out of memory" in str(e).lower():
-                print(f"[BlockZoo] Skipping batch size {batch_size}: Out of memory")
-                if device == "cuda":
-                    torch.cuda.empty_cache()
-                break
-            else:
-                raise e
-
-    return results
-
-
 def main() -> None:
     """CLI entrypoint for blockzoo-benchmark command."""
     parser = argparse.ArgumentParser(
@@ -304,7 +250,6 @@ def main() -> None:
     parser.add_argument("--num-blocks", type=int, default=3, help="Number of blocks in the scaffold stage")
     parser.add_argument("--warmup-runs", type=int, default=10, help="Number of warmup runs")
     parser.add_argument("--benchmark-runs", type=int, default=100, help="Number of benchmark runs")
-    parser.add_argument("--multi-batch", nargs="+", type=int, help="Test multiple batch sizes (e.g., --multi-batch 1 2 4 8)")
     parser.add_argument("--output", help="Optional CSV file to append results to")
 
     args = parser.parse_args()
@@ -315,55 +260,28 @@ def main() -> None:
         args.device = "cpu"
 
     try:
-        if args.multi_batch:
-            # multi-batch benchmark
-            block_cls = get_block_class(args.block)
-            model = ScaffoldNet(block_cls=block_cls, position=args.position, num_blocks=args.num_blocks, base_channels=64, out_dim=10)
+        # single benchmark
+        results = benchmark_block_in_scaffold(
+            block_name=args.block,
+            position=args.position,
+            input_shape=tuple(args.input_shape),
+            device=args.device,
+            batch_size=args.batch_size,
+            num_blocks=args.num_blocks,
+            warmup_runs=args.warmup_runs,
+            benchmark_runs=args.benchmark_runs,
+        )
 
-            results = benchmark_multiple_batch_sizes(
-                model=model,
-                batch_sizes=args.multi_batch,
-                input_shape=tuple(args.input_shape),
-                device=args.device,
-                warmup_runs=args.warmup_runs,
-                benchmark_runs=args.benchmark_runs,
-            )
+        # print results
+        model_name = f"{args.block} (position={args.position})"
+        print_benchmark_results(results, model_name)
 
-            # print results for each batch size
-            for batch_size, batch_results in results.items():
-                model_name = f"{args.block} (position={args.position}, batch={batch_size})"
-                print_benchmark_results(batch_results, model_name)
+        # optionally save to CSV
+        if args.output:
+            from .utils import append_results
 
-                # optionally save each result
-                if args.output:
-                    from .utils import append_results
-
-                    batch_results.update({"block_class": args.block, "position": args.position, "num_blocks": args.num_blocks})
-                    append_results(args.output, batch_results)
-
-        else:
-            # single benchmark
-            results = benchmark_block_in_scaffold(
-                block_name=args.block,
-                position=args.position,
-                input_shape=tuple(args.input_shape),
-                device=args.device,
-                batch_size=args.batch_size,
-                num_blocks=args.num_blocks,
-                warmup_runs=args.warmup_runs,
-                benchmark_runs=args.benchmark_runs,
-            )
-
-            # print results
-            model_name = f"{args.block} (position={args.position})"
-            print_benchmark_results(results, model_name)
-
-            # optionally save to CSV
-            if args.output:
-                from .utils import append_results
-
-                append_results(args.output, results)
-                print(f"\n[BlockZoo] Results appended to {args.output}")
+            append_results(args.output, results)
+            print(f"\n[BlockZoo] Results appended to {args.output}")
 
     except Exception as e:
         print(f"[BlockZoo] Error: {e}", file=sys.stderr)

@@ -1,14 +1,14 @@
-"""Tests for blockzoo.profiler module."""
+"""Tests for blockzoo.profile module."""
 
 import unittest
 
-from blockzoo.profiler import get_model_profile, profile_block_in_scaffold
+from blockzoo.profile import get_model_profile, profile_block_in_scaffold
 from blockzoo.scaffold import ScaffoldNet
 from blockzoo.wrappers import ResNetBasicBlockWrapper
 
 
 class TestProfiler(unittest.TestCase):
-    """Test cases for profiler module."""
+    """Test cases for profile module."""
 
     def setUp(self):
         """Set up test fixtures."""

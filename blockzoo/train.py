@@ -4,6 +4,7 @@ This module provides the main training pipeline that integrates profiling,
 benchmarking, and Lightning-based training for convolutional blocks.
 """
 
+import os
 import sys
 import time
 import warnings
@@ -15,20 +16,20 @@ import torch
 import torch.nn.functional as F
 import torchvision
 import torchvision.transforms as transforms
-from lightning.pytorch.callbacks import EarlyStopping
+from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
 from torch import nn
 from torch.utils.data import DataLoader
 
 from .benchmark import benchmark_model, print_benchmark_results
 from .config import ExperimentConfig, get_dataset_config, parse_train_args, validate_config
-from .profiler import get_model_profile, print_profile
+from .profile import get_model_profile, print_profile
 from .scaffold import ScaffoldNet
 from .utils import append_results
 from .wrappers import get_block_class
 
 # suppress Lightning warnings for cleaner output
-warnings.filterwarnings("ignore", ".*does not have many workers.*")
-warnings.filterwarnings("ignore", ".*The dataloader.*")
+# warnings.filterwarnings("ignore", ".*does not have many workers.*")
+# warnings.filterwarnings("ignore", ".*The dataloader.*")
 
 
 class BlockZooLightningModule(L.LightningModule):
@@ -209,8 +210,19 @@ def run_training(config: ExperimentConfig) -> Dict[str, Any]:
     # create Lightning module
     lightning_module = BlockZooLightningModule(model, config.learning_rate)
 
-    # setup trainer
-    callbacks = [EarlyStopping(monitor="val_loss", patience=5, verbose=False)]
+    # create checkpoints directory
+    os.makedirs("checkpoints", exist_ok=True)
+
+    checkpoint_callback = ModelCheckpoint(
+        monitor="val_loss",
+        mode="min",
+        save_top_k=1,
+        verbose=False,
+        dirpath="checkpoints",
+        filename=f"{config.block_class}_{config.position}_{config.dataset}_best",
+    )
+
+    callbacks = [EarlyStopping(monitor="val_loss", patience=10, verbose=False), checkpoint_callback]
 
     # configure trainer
     trainer_kwargs = {
@@ -219,7 +231,7 @@ def run_training(config: ExperimentConfig) -> Dict[str, Any]:
         "enable_progress_bar": True,
         "enable_model_summary": False,
         "logger": False,  # disable logging for simplicity
-        "enable_checkpointing": False,  # disable checkpointing for simplicity
+        "enable_checkpointing": True,  # enable checkpointing to save best model
     }
 
     # set accelerator
@@ -239,6 +251,15 @@ def run_training(config: ExperimentConfig) -> Dict[str, Any]:
     trainer.fit(lightning_module, train_loader, val_loader)
 
     training_time = time.time() - start_time
+
+    # load best model checkpoint
+    best_model_path = checkpoint_callback.best_model_path
+    if best_model_path:
+        print(f"[BlockZoo] Loading best model from: {best_model_path}")
+        lightning_module = BlockZooLightningModule.load_from_checkpoint(
+            best_model_path, model=model, learning_rate=config.learning_rate  # pass the original model architecture
+        )
+        model = lightning_module.model
 
     # get final metrics
     train_metrics = trainer.callback_metrics
@@ -279,9 +300,9 @@ def run_training(config: ExperimentConfig) -> Dict[str, Any]:
     return results, model
 
 
-def run_benchmark_if_requested(model: nn.Module, config: ExperimentConfig) -> Optional[Dict[str, Any]]:
+def run_benchmark(model: nn.Module, config: ExperimentConfig) -> Dict[str, Any]:
     """
-    Run benchmarking if requested in config.
+    Run benchmarking on the model.
 
     Parameters
     ----------
@@ -292,8 +313,8 @@ def run_benchmark_if_requested(model: nn.Module, config: ExperimentConfig) -> Op
 
     Returns
     -------
-    dict or None
-        Benchmark results if benchmarking was requested, None otherwise.
+    dict
+        Benchmark results.
     """
     print(f"\n[BlockZoo] Running benchmark...")
 
@@ -321,13 +342,12 @@ def main() -> None:
         # full training pipeline
         results, trained_model = run_training(config)
 
-        # run benchmarking if requested
-        benchmark_results = run_benchmark_if_requested(trained_model, config)
-        if benchmark_results:
-            # add benchmark results to main results
-            results.update(
-                {"latency_ms": benchmark_results["latency_ms"], "latency_std": benchmark_results["latency_std"], "throughput": benchmark_results["throughput"]}
-            )
+        # run benchmarking (always done)
+        benchmark_results = run_benchmark(trained_model, config)
+        # add benchmark results to main results
+        results.update(
+            {"latency_ms": benchmark_results["latency_ms"], "latency_std": benchmark_results["latency_std"], "throughput": benchmark_results["throughput"]}
+        )
 
         # save results to CSV
         append_results(config.output_file, results)

@@ -1,6 +1,8 @@
-# BlockZoo: Convolutional Block Benchmarking Framework
+# BlockZoo
 
-Given the demise of benchmarks from paperswithcode and the ongoing need to evaluate convolutional building blocks, BlockZoo provides a standardized framework to benchmark and profile these blocks in isolation. By embedding blocks into a fixed scaffold architecture at different positions (early, mid, late), we can measure block specialization and performance.
+**BlockZoo** provides a standardized framework to benchmark and profile convolutional blocks in isolation. By embedding blocks into a fixed scaffold architecture at different positions (early, mid, late), we can measure block specialization and performance.
+
+The motivation behind this project was the demise of benchmarks from paperswithcode.
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.2+-ee4c2c.svg)](https://pytorch.org/)
@@ -30,7 +32,7 @@ pip install --editable .
 
 ```bash
 # Profile a ResNet BasicBlock in mid position
-python -m blockzoo.profiler ResNetBasicBlock --position mid
+python -m blockzoo.profile ResNetBasicBlock --position mid
 
 # Output:
 # [BlockZoo] Profile for ResNetBasicBlock (position=mid):
@@ -57,7 +59,7 @@ python -m blockzoo.benchmark ResNetBasicBlock --position mid --device cuda
 ```bash
 # profile, benchmark, train, and evaluate
 ```bash
-python -m blockzoo.train ResNetBasicBlock --position mid --epochs 5 --benchmark
+python -m blockzoo.train ResNetBasicBlock --position mid --epochs 5
 # see results/results.csv for logged metrics
 ```
 
@@ -147,7 +149,7 @@ python -m blockzoo.train <block_class> [options]
 #### Profiling Command (`blockzoo-profile`)
 
 ```bash
-python -m blockzoo.profiler <block_class> [options]
+python -m blockzoo.profile <block_class> [options]
 
 # Options:
 #   --position {early,mid,late}    Scaffold position (default: mid)
@@ -194,7 +196,8 @@ print(f"Throughput: {benchmark['throughput']:.1f} img/s")
 
 ```python
 import torch
-from blockzoo import ScaffoldNet, ExperimentConfig, get_model_profile
+from blockzoo import ScaffoldNet, ExperimentConfig
+from blockzoo.profile import get_model_profile
 from blockzoo.wrappers import get_block_class
 
 # Import and create a custom block
@@ -215,7 +218,8 @@ config = ExperimentConfig(
 )
 
 # Use the configuration (would typically be done in train.py)
-print(f"Config: {config.to_dict()}")
+import dataclasses
+print(f"Config: {dataclasses.asdict(config)}")
 ```
 
 #### Custom Block Integration

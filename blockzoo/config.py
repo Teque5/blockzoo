@@ -6,9 +6,11 @@ CLI arguments and experiment settings across the BlockZoo framework.
 
 import argparse
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+
+import torch
 
 log = logging.getLogger(__name__)
 
@@ -16,7 +18,10 @@ log = logging.getLogger(__name__)
 @dataclass
 class ExperimentConfig:
     """
-    Configuration for BlockZoo experiments.
+    Configuration container for BlockZoo experiments.
+
+    This is a simple data container for parsed configuration values.
+    All defaults are defined in the argument parser, not here.
 
     Parameters
     ----------
@@ -44,31 +49,35 @@ class ExperimentConfig:
         Output dimension (number of classes).
     output_file : str
         Path to CSV file for saving results.
+    experiment_name : str, optional
+        Name for this experiment (for tracking).
+    notes : str, optional
+        Additional notes for this experiment.
     """
 
     # model configuration
     block_class: str
-    position: str = "mid"
-    num_blocks: int = 3
-    base_channels: int = 64
-    out_dim: int = 10
+    position: str
+    num_blocks: int
+    base_channels: int
+    out_dim: int
 
     # training configuration
-    dataset: str = "cifar10"
-    epochs: int = 25
-    batch_size: int = 256
-    learning_rate: float = 0.001
+    dataset: str
+    epochs: int
+    batch_size: int
+    learning_rate: float
 
     # system configuration
-    device: str = "cpu"
-    input_shape: Tuple[int, int, int, int] = (1, 3, 32, 32)
+    device: str
+    input_shape: Tuple[int, int, int, int]
 
     # experiment configuration
-    output_file: str = "results/results.csv"
+    output_file: str
 
     # optional metadata
-    experiment_name: Optional[str] = None
-    notes: Optional[str] = None
+    experiment_name: Optional[str]
+    notes: Optional[str]
 
     def __post_init__(self) -> None:
         """Validate configuration after initialization."""
@@ -84,30 +93,7 @@ class ExperimentConfig:
         if self.device not in {"cpu", "cuda"}:
             raise ValueError(f"Invalid device: {self.device}")
 
-        # set output dimension based on dataset if not specified
-        if self.out_dim == 10 and self.dataset == "cifar100":
-            self.out_dim = 100
-        elif self.out_dim == 10 and self.dataset == "imagenet":
-            self.out_dim = 1000
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert config to dictionary."""
-        return {
-            "block_class": self.block_class,
-            "position": self.position,
-            "dataset": self.dataset,
-            "epochs": self.epochs,
-            "batch_size": self.batch_size,
-            "learning_rate": self.learning_rate,
-            "input_shape": self.input_shape,
-            "device": self.device,
-            "num_blocks": self.num_blocks,
-            "base_channels": self.base_channels,
-            "out_dim": self.out_dim,
-            "output_file": self.output_file,
-            "experiment_name": self.experiment_name,
-            "notes": self.notes,
-        }
+        # Note: out_dim is now set correctly in parse_train_args based on dataset
 
 
 @dataclass
@@ -121,13 +107,10 @@ class BenchmarkConfig:
         Number of warmup runs before benchmarking.
     benchmark_runs : int
         Number of runs for benchmarking.
-    batch_sizes : list of int
-        List of batch sizes to test.
     """
 
     warmup_runs: int = 10
     benchmark_runs: int = 100
-    batch_sizes: List[int] = field(default_factory=lambda: [1])
 
 
 def create_train_parser() -> argparse.ArgumentParser:
@@ -153,7 +136,7 @@ def create_train_parser() -> argparse.ArgumentParser:
 
     # training configuration
     parser.add_argument("--dataset", choices=["cifar10", "cifar100", "imagenet"], default="cifar10", help="Dataset to use for training")
-    parser.add_argument("--epochs", type=int, default=25, help="Number of training epochs")
+    parser.add_argument("--epochs", type=int, default=50, help="Number of training epochs")
     parser.add_argument("--batch-size", type=int, default=256, help="Batch size for training")
     parser.add_argument("--lr", "--learning-rate", type=float, default=0.001, dest="learning_rate", help="Learning rate for optimizer")
 
@@ -200,8 +183,6 @@ def parse_train_args(args: Optional[List[str]] = None) -> ExperimentConfig:
     # handle auto device selection
     device = parsed_args.device
     if device == "auto":
-        import torch
-
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # set output dimension based on dataset

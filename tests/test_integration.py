@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from blockzoo.profiler import profile_block_in_scaffold
+from blockzoo.profile import profile_block_in_scaffold
 from blockzoo.utils import append_results, load_results
 
 

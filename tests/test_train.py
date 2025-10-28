@@ -13,7 +13,9 @@ class TestTrain(unittest.TestCase):
 
     def setUp(self):
         """Set up test fixtures."""
-        self.config = ExperimentConfig(block_class="ResNetBasicBlock", position="mid", dataset="cifar10", epochs=1, batch_size=2)
+        from blockzoo.config import parse_train_args
+
+        self.config = parse_train_args(["ResNetBasicBlock", "--position", "mid", "--dataset", "cifar10", "--epochs", "1", "--batch-size", "2"])
 
     def test_create_model_from_config(self):
         """Test model creation from configuration."""

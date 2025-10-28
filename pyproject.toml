@@ -18,7 +18,7 @@ dependencies = [
 
 [project.scripts]
 blockzoo-train = "blockzoo.train:main"
-blockzoo-profile = "blockzoo.profiler:main"
+blockzoo-profile = "blockzoo.profile:main"
 blockzoo-benchmark = "blockzoo.benchmark:main"
 
 [project.optional-dependencies]

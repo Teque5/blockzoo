@@ -12,6 +12,7 @@ from typing import Any, Dict, Tuple
 
 import numpy as np
 import torch
+from timm.utils.model import reparameterize_model
 from torch import nn
 
 from .scaffold import ScaffoldNet
@@ -49,7 +50,7 @@ def benchmark_model(
     model: nn.Module,
     input_shape: Tuple[int, int, int, int] = (1, 3, 32, 32),
     device: str = "cpu",
-    batch_size: int = 1,
+    batch_size: int = 32,
     warmup_runs: int = 10,
     benchmark_runs: int = 100,
 ) -> Dict[str, Any]:
@@ -88,6 +89,8 @@ def benchmark_model(
     >>> model = ScaffoldNet(ResNetBasicBlockWrapper, position='mid')
     >>> results = benchmark_model(model, device='cpu')
     """
+    # reparameterize model if supported (returns deepcopy)
+    model = reparameterize_model(model)
     model = model.to(device)
     model.eval()
 

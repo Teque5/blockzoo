@@ -1,10 +1,4 @@
-"""
-Block wrappers for external block architectures.
-
-This module provides a unified interface for blocks from different libraries
-(like timm) that may have different constructor signatures than what BlockZoo expects.
-The lookup table maps block names to wrapper functions that return properly configured blocks.
-"""
+"""Unified interface for blocks from different libraries. See lookup table BLOCK_REGISTRY."""
 
 from functools import partial
 from typing import Any, Callable, Dict

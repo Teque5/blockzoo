@@ -35,7 +35,7 @@ def main():
             current += 1
             print(f"\n[{current}/{total_experiments}] {block} @ {position}")
 
-            cmd = [sys.executable, "-m", "blockzoo.train", f"{block}", "--position", position, "--benchmark", "--epochs", "25"]
+            cmd = [sys.executable, "-m", "blockzoo.train", f"{block}", "--position", position, "--epochs", "50"]
 
             try:
                 subprocess.run(cmd, check=True)

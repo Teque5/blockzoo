@@ -136,7 +136,7 @@ def create_train_parser() -> argparse.ArgumentParser:
 
     # training configuration
     parser.add_argument("--dataset", choices=["cifar10", "cifar100", "imagenet"], default="cifar10", help="Dataset to use for training")
-    parser.add_argument("--epochs", type=int, default=50, help="Number of training epochs")
+    parser.add_argument("--epochs", type=int, default=25, help="Number of training epochs")
     parser.add_argument("--batch-size", type=int, default=256, help="Batch size for training")
     parser.add_argument("--lr", "--learning-rate", type=float, default=0.001, dest="learning_rate", help="Learning rate for optimizer")
 

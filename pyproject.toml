@@ -44,7 +44,7 @@ readme = {file = ["README.md"], content-type = "text/markdown"}
 branch = true
 source = ["blockzoo", "tests"]
 # -rA captures stdout from all tests and places it after the pytest summary
-command_line = "-m pytest -rA --doctest-modules"
+command_line = "-m pytest -rA --doctest-modules --cov=blockzoo"
 
 [tool.black]
 line-length = 160

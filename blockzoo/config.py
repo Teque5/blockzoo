@@ -271,8 +271,6 @@ def validate_config(config: ExperimentConfig) -> None:
 
     # validate CUDA availability if requested
     if config.device == "cuda":
-        import torch
-
         if not torch.cuda.is_available():
             raise ValueError("CUDA device requested but not available")
 

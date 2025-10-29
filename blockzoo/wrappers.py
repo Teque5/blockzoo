@@ -4,7 +4,7 @@ from functools import partial
 from typing import Any, Callable, Dict
 
 from timm.models._efficientnet_blocks import EdgeResidual, InvertedResidual, SqueezeExcite, UniversalInvertedResidual
-from timm.models.fastvit import FastVitStage, MobileOneBlock
+from timm.models.fastvit import FastVitStage, MobileOneBlock, ReparamLargeKernelConv
 from timm.models.ghostnet import GhostBottleneckV3
 from timm.models.resnet import BasicBlock as ResNetBasicBlock
 from timm.models.resnet import Bottleneck as ResNetBottleneck
@@ -76,6 +76,21 @@ class MobileOneBlockWrapper(MobileOneBlock):
         )
 
 
+class ReparamLargeKernelConvWrapper(ReparamLargeKernelConv):
+    """ReparamLargeKernelConv from RepLKNet"""
+
+    def __init__(self, in_channels: int, out_channels: int, stride: int, position: str):
+        super().__init__(
+            in_chs=in_channels,
+            out_chs=out_channels,
+            kernel_size=7,
+            small_kernel=3,
+            stride=stride,
+            group_size=1,
+            act_layer=nn.GELU,
+        )
+
+
 class RepMixerWrapper(FastVitStage):
     """RepMixer from FastViT"""
 
@@ -139,6 +154,7 @@ BLOCK_REGISTRY: Dict[str, Callable[[int, int, int, str], nn.Module]] = {
     "GhostBottleneckV3": GhostBottleneckV3Wrapper,
     "InvertedResidual": InvertedResidualWrapper,
     "MobileOneBlock": MobileOneBlockWrapper,
+    "ReparamLargeKernelConv": ReparamLargeKernelConvWrapper,
     "RepMixer": RepMixerWrapper,
     "ResNetBasicBlock": ResNetBasicBlockWrapper,
     "ResNetBottleneck": ResNetBottleneckWrapper,

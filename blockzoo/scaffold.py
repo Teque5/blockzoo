@@ -39,7 +39,7 @@ class ScaffoldNet(nn.Module):
 
     Examples
     --------
-    >>> model = ScaffoldNet(ResNetBasicBlockWrapper, position='mid', num_blocks=2)
+    >>> model = ScaffoldNet(ResNetBasicBlockWrapper, position='mid')
     >>> x = torch.randn(1, 3, 32, 32)
     >>> y = model(x)
     >>> print(y.shape)

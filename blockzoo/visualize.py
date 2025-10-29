@@ -153,7 +153,7 @@ def create_scatter_plot(df: pd.DataFrame, x_col: str, y_col: str, x_label: str, 
             ax.plot(valid_positions[x_col], valid_positions[y_col], color=block_style["color"], alpha=0.6, linewidth=2, linestyle="-")
 
     # Customize the plot
-    ax.set_ylim(0.5, 0.95)
+    # ax.set_ylim(0.8, 1.0)
     ax.set_xlabel(x_label, fontsize=12, fontweight="bold")
     ax.set_ylabel(y_label, fontsize=12, fontweight="bold")
     ax.set_title(title, fontsize=14, fontweight="bold", pad=20)

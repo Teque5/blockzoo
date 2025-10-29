@@ -130,11 +130,11 @@ def create_data_loaders(dataset_name: str, batch_size: int, num_workers: int = 8
 
     # create datasets
     if dataset_name == "cifar10":
-        train_dataset = torchvision.datasets.CIFAR10(root="./data", train=True, download=True, transform=train_transform)
-        val_dataset = torchvision.datasets.CIFAR10(root="./data", train=False, download=True, transform=val_transform)
+        train_dataset = torchvision.datasets.CIFAR10(root="~/.cache/torch/datasets", train=True, download=True, transform=train_transform)
+        val_dataset = torchvision.datasets.CIFAR10(root="~/.cache/torch/datasets", train=False, download=True, transform=val_transform)
     elif dataset_name == "cifar100":
-        train_dataset = torchvision.datasets.CIFAR100(root="./data", train=True, download=True, transform=train_transform)
-        val_dataset = torchvision.datasets.CIFAR100(root="./data", train=False, download=True, transform=val_transform)
+        train_dataset = torchvision.datasets.CIFAR100(root="~/.cache/torch/datasets", train=True, download=True, transform=train_transform)
+        val_dataset = torchvision.datasets.CIFAR100(root="~/.cache/torch/datasets", train=False, download=True, transform=val_transform)
     elif dataset_name == "imagenet":
         # for ImageNet, we'd need to specify the path - this is a placeholder
         raise NotImplementedError("ImageNet support requires manual dataset setup")

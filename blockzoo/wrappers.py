@@ -9,6 +9,7 @@ from timm.models.ghostnet import GhostBottleneckV3
 from timm.models.resnet import BasicBlock as ResNetBasicBlock
 from timm.models.resnet import Bottleneck as ResNetBottleneck
 from timm.models.resnet import downsample_avg
+from timm.models.vitamin import MbConvLNBlock
 from torch import nn
 
 
@@ -61,6 +62,17 @@ class GhostBottleneckV3Wrapper(GhostBottleneckV3):
             out_chs=out_channels,
             stride=stride,
             se_ratio=se_ratio,
+        )
+
+
+class MbConvLNBlockWrapper(MbConvLNBlock):
+    """MbConvLNBlock from ViTamin, similar to InvertedResidual but with LayerNorm"""
+
+    def __init__(self, in_channels: int, out_channels: int, stride: int, position: str):
+        super().__init__(
+            in_chs=in_channels,
+            out_chs=out_channels,
+            stride=stride,
         )
 
 
@@ -119,7 +131,7 @@ class ResNetBasicBlockWrapper(ResNetBasicBlock):
 
 
 class ResNetBottleneckWrapper(ResNetBottleneck):
-    """ResNet BottleneckBlock for deeper ResNet architectures from the 2015 ResNet paper"""
+    """ResNet BottleneckBlock for deeper ResNet architectures"""
 
     def __init__(self, in_channels: int, out_channels: int, stride: int, position: str):
         # Note: ResNet Bottleneck uses planes where final output is planes * expansion (4),
@@ -153,6 +165,7 @@ BLOCK_REGISTRY: Dict[str, Callable[[int, int, int, str], nn.Module]] = {
     "EdgeResidual": EdgeResidualWrapper,
     "GhostBottleneckV3": GhostBottleneckV3Wrapper,
     "InvertedResidual": InvertedResidualWrapper,
+    "MBConvLNBlock": MbConvLNBlockWrapper,
     "MobileOneBlock": MobileOneBlockWrapper,
     "ReparamLargeKernelConv": ReparamLargeKernelConvWrapper,
     "RepMixer": RepMixerWrapper,
@@ -180,27 +193,3 @@ def get_block_class(block_name: str) -> Callable[[int, int, int, str], nn.Module
         raise KeyError(f"Block '{block_name}' not found. Available blocks: {available_blocks}")
 
     return BLOCK_REGISTRY[block_name]
-
-
-def list_available_blocks() -> list[str]:
-    """List all available block names."""
-    return list(BLOCK_REGISTRY.keys())
-
-
-def create_block(block_name: str, in_channels: int, out_channels: int, stride: int, position: str, **kwargs) -> nn.Module:
-    """
-    Create a block by name with standardized (in_channels, out_channels, stride, position) interface.
-
-    Args:
-        block_name: Name of the block
-        in_channels: Input channels
-        out_channels: Output channels
-        stride: Stride for the block
-        position: Position in the network ('early', 'mid', 'late')
-        **kwargs: Additional arguments passed to the block constructor
-
-    Returns:
-        Configured block module
-    """
-    block_creator = get_block_class(block_name)
-    return block_creator(in_channels, out_channels, stride, position, **kwargs)

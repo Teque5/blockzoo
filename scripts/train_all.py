@@ -9,7 +9,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from blockzoo.wrappers import list_available_blocks
+from blockzoo import list_available_blocks
 
 
 def main():
@@ -17,7 +17,7 @@ def main():
     blocks = list_available_blocks()
     positions = ["early", "mid", "late"]
     # show available blocks from wrappers
-    print("Available blocks in blockzoo.wrappers:")
+    print("Available blocks in blockzoo:")
     for block in list_available_blocks():
         print(f"  - {block}")
     print()

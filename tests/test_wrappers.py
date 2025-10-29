@@ -8,7 +8,7 @@ and produce the expected output shapes.
 import pytest
 import torch
 
-from blockzoo.wrappers import BLOCK_REGISTRY, create_block, list_available_blocks
+from blockzoo.wrappers import BLOCK_REGISTRY
 
 
 class TestBlockRegistry:
@@ -21,7 +21,7 @@ class TestBlockRegistry:
         stride = 1
 
         # create block
-        block = create_block(block_name, in_channels, out_channels, stride, position="mid")
+        block = BLOCK_REGISTRY[block_name](in_channels, out_channels, stride, position="early")
 
         # test forward pass
         x = torch.randn(2, in_channels, 32, 32)
@@ -39,7 +39,7 @@ class TestBlockRegistry:
         stride = 2
 
         # create block
-        block = create_block(block_name, in_channels, out_channels, stride, position="mid")
+        block = BLOCK_REGISTRY[block_name](in_channels, out_channels, stride, position="mid")
 
         # test forward pass
         x = torch.randn(2, in_channels, 32, 32)
@@ -57,7 +57,7 @@ class TestBlockRegistry:
         stride = 1
 
         # create block
-        block = create_block(block_name, in_channels, out_channels, stride, position="late")
+        block = BLOCK_REGISTRY[block_name](in_channels, out_channels, stride, position="late")
 
         # test forward pass
         x = torch.randn(1, in_channels, 16, 16)

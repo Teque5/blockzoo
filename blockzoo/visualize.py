@@ -25,7 +25,7 @@ def load_results(csv_path: str) -> pd.DataFrame:
     Returns
     -------
     pd.DataFrame
-        Loaded and validated results dataframe.
+        Loaded and validated results dataframe with max accuracy per experiment.
 
     Raises
     ------
@@ -40,7 +40,7 @@ def load_results(csv_path: str) -> pd.DataFrame:
     df = pd.read_csv(csv_path)
 
     # Check for required columns
-    required_cols = ["val_acc", "position", "block"]
+    required_cols = ["val_acc", "position", "block", "dataset"]
     missing_cols = [col for col in required_cols if col not in df.columns]
     if missing_cols:
         raise ValueError(f"Missing required columns: {missing_cols}")
@@ -51,7 +51,17 @@ def load_results(csv_path: str) -> pd.DataFrame:
     if len(df) == 0:
         raise ValueError("No valid data rows found in CSV")
 
-    return df
+    # Group by (block, dataset, position) and take the max accuracy within each group
+    # This handles multiple runs/experiments for the same configuration
+    groupby_cols = ["block", "dataset", "position"]
+
+    # For the max accuracy row in each group, keep all other columns from that row
+    idx = df.groupby(groupby_cols)["val_acc"].idxmax()
+    df_max = df.loc[idx].reset_index(drop=True)
+
+    print(f"Aggregated {len(df)} total experiments into {len(df_max)} unique configurations (taking max accuracy per config)")
+
+    return df_max
 
 
 def get_position_sizes():
@@ -75,13 +85,15 @@ def get_block_styles(blocks):
     return styles
 
 
-def create_scatter_plot(df: pd.DataFrame, x_col: str, y_col: str, x_label: str, y_label: str, title: str, output_path: str) -> None:
-    """Create a generic accuracy scatter plot.
+def create_scatter_plot(df: pd.DataFrame, dataset: str, x_col: str, y_col: str, x_label: str, y_label: str, title: str, output_path: str) -> None:
+    """Create a generic accuracy scatter plot for a specific dataset.
 
     Parameters
     ----------
     df : pd.DataFrame
         Results dataframe
+    dataset : str
+        Dataset to filter for (e.g., 'cifar10', 'cifar100')
     x_col : str
         Column name for x-axis data
     y_col : str
@@ -103,10 +115,11 @@ def create_scatter_plot(df: pd.DataFrame, x_col: str, y_col: str, x_label: str, 
         print(f"Warning: Column '{x_col}' not found, skipping plot")
         return
 
-    # Filter out rows with missing data for this plot
-    plot_df = df.dropna(subset=[x_col, y_col])
+    # Filter for the specific dataset and remove rows with missing data
+    dataset_df = df[df["dataset"] == dataset].copy()
+    plot_df = dataset_df.dropna(subset=[x_col, y_col])
     if len(plot_df) == 0:
-        print(f"Warning: No valid data for {x_col} vs {y_col} plot")
+        print(f"Warning: No valid data for {dataset} {x_col} vs {y_col} plot")
         return
 
     position_sizes = get_position_sizes()
@@ -187,7 +200,7 @@ def create_scatter_plot(df: pd.DataFrame, x_col: str, y_col: str, x_label: str, 
 
 
 def create_all_plots(df: pd.DataFrame, output_dir: str = ".") -> None:
-    """Create all four accuracy comparison plots.
+    """Create all accuracy comparison plots for each dataset.
 
     Parameters
     ----------
@@ -199,18 +212,38 @@ def create_all_plots(df: pd.DataFrame, output_dir: str = ".") -> None:
     output_path = Path(output_dir)
     output_path.mkdir(exist_ok=True)
     today = datetime.date.today().isoformat()
-    # Plot configurations: (column, label, filename)
+
+    # Get unique datasets
+    datasets = df["dataset"].unique()
+    print(f"Found datasets: {list(datasets)}")
+
+    # Plot configurations: (column, label, base_filename)
     plot_configs = [
-        ("flops", "FLOPs (Floating Point Operations)", f"{today}_accuracy-vs-flops.png"),
-        ("latency_ms", "Inference Latency (ms)", f"{today}_accuracy-vs-latency.png"),
-        ("memory_mb", "Memory Usage (MB)", f"{today}_accuracy-vs-memory.png"),
+        ("flops", "FLOPs (Floating Point Operations)", "accuracy-vs-flops"),
+        ("latency_ms", "Inference Latency (ms)", "accuracy-vs-latency"),
+        ("memory_mb", "Memory Usage (MB)", "accuracy-vs-memory"),
     ]
 
-    for x_col, x_label, filename in plot_configs:
-        title = f"BlockZoo: Accuracy vs {x_label.split('(')[0].strip()}"
-        output_file = output_path / filename
+    for dataset in datasets:
+        dataset_count = len(df[df["dataset"] == dataset])
+        print(f"Creating plots for {dataset} ({dataset_count} experiments)")
 
-        create_scatter_plot(df=df, x_col=x_col, y_col="val_acc", x_label=x_label, y_label="CIFAR10 Accuracy", title=title, output_path=str(output_file))
+        for x_col, x_label, base_filename in plot_configs:
+            title = f"BlockZoo: Accuracy vs {x_label.split('(')[0].strip()} ({dataset.upper()})"
+            y_label = f"{dataset.upper()} Accuracy"
+            filename = f"{today}_{dataset}_{base_filename}.png"
+            output_file = output_path / filename
+
+            create_scatter_plot(
+                df=df,
+                dataset=dataset,
+                x_col=x_col,
+                y_col="val_acc",
+                x_label=x_label,
+                y_label=y_label,
+                title=title,
+                output_path=str(output_file)
+            )
 
 
 def main():

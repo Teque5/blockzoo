@@ -8,6 +8,14 @@ The motivation behind this project was the demise of benchmarks from paperswithc
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.2+-ee4c2c.svg)](https://pytorch.org/)
 [![Lightning](https://img.shields.io/badge/Lightning-2.0+-792ee5.svg)](https://lightning.ai/)
 
+## Results
+
+![CIFAR-100 Accuracy vs Latency](plots/2025-11-03_cifar100_accuracy-vs-latency.png)
+
+Each data point represents the mean performance from 5 training runs of each block architecture tested across all three scaffold positions (early/mid/late) on CIFAR-100 over 50 epochs.
+
+Iterated benchmarking reveals distinct performance characteristics across block architectures. While some designs like RepMixer and DYMicroBlock show clear limitations for image classification tasks, the majority of blocks form an interesting Pareto frontier trading off accuracy versus inference latency. MobileOneBlock emerges as exceptional for high-throughput applications, delivering competitive accuracy with remarkably low latency through its reparameterization strategy. Meanwhile, inverted residual architectures (InvertedResidual, UniversalInvertedBottleneck, EdgeResidual) consistently achieve high accuracy scores, validating their widespread adoption in mobile-optimized networks. It's difficult to make the comparison strictly fair given differing FLOPs and parameter counts, but these results use the "default" configurations of each block as defined in their original papers.
+
 ## Features
 
 - **Scaffold Architecture**: Fixed stem → StageA → StageB → StageC → head for consistent evaluation

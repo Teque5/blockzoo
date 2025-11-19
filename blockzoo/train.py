@@ -222,7 +222,8 @@ def run_training(config: ExperimentConfig) -> Dict[str, Any]:
         filename=f"{config.block_class}_{config.position}_{config.dataset}_best" + "_{epoch:02d}",
     )
 
-    callbacks = [EarlyStopping(monitor="val_loss", patience=10, verbose=False), checkpoint_callback]
+    callbacks = [checkpoint_callback]
+    # callbacks = [EarlyStopping(monitor="val_loss", patience=10, verbose=False), checkpoint_callback]
 
     # configure trainer
     trainer_kwargs = {

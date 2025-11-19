@@ -10,7 +10,7 @@ The motivation behind this project was the demise of benchmarks from paperswithc
 
 ## Results
 
-<img src="plots/2025-11-03_cifar100_accuracy-vs-latency.png" alt="CIFAR-100 Accuracy vs Latency">
+<img src="docs/cifar100_acc-vs-latency.webp" alt="CIFAR-100 Accuracy vs Latency">
 
 Each data point represents the mean performance from 5 training runs of each block architecture tested across all three scaffold positions (early/mid/late) on CIFAR-100 over 50 epochs.
 

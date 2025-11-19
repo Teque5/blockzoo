@@ -4,13 +4,13 @@
 
 The motivation behind this project was the demise of benchmarks from paperswithcode and a desire to have a more fair comparison of convolutional blocks.
 
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.2+-ee4c2c.svg)](https://pytorch.org/)
 [![Lightning](https://img.shields.io/badge/Lightning-2.0+-792ee5.svg)](https://lightning.ai/)
 
 ## Results
 
-![CIFAR-100 Accuracy vs Latency](plots/2025-11-03_cifar100_accuracy-vs-latency.png)
+<img src="plots/2025-11-03_cifar100_accuracy-vs-latency.png" alt="CIFAR-100 Accuracy vs Latency">
 
 Each data point represents the mean performance from 5 training runs of each block architecture tested across all three scaffold positions (early/mid/late) on CIFAR-100 over 50 epochs.
 
